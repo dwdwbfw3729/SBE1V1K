@@ -1,0 +1,121 @@
+diff --git a/package/utils/lua/Makefile b/package/utils/lua/Makefile
+index 97618e6..ee0e6a6 100644
+--- a/package/utils/lua/Makefile
++++ b/package/utils/lua/Makefile
+@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=lua
+ PKG_VERSION:=5.1.5
+-PKG_RELEASE:=3
++PKG_RELEASE:=4
+ 
+ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+ PKG_SOURCE_URL:=http://www.lua.org/ftp/ \
+diff --git a/package/utils/lua/patches/410-CVE-2025-49844.patch b/package/utils/lua/patches/410-CVE-2025-49844.patch
+new file mode 100644
+index 0000000..c9c978e
+--- /dev/null
++++ b/package/utils/lua/patches/410-CVE-2025-49844.patch
+@@ -0,0 +1,37 @@
++From d5728cb5795c966c5b5b1e0f0ac576a7e69af539 Mon Sep 17 00:00:00 2001
++From: Mincho Paskalev <minchopaskal@gmail.com>
++Date: Mon, 23 Jun 2025 11:41:37 +0300
++Subject: Lua parser: anchor chunk name against collection
++
++CVE: CVE-2025-49844
++Origin: https://github.com/redis/redis/commit/d5728cb5795c966c5b5b1e0f0ac576a7e69af539
++Security-Advisory: https://ubuntu.com/security/notices/USN-8262-1
++
++The parser retained a newly interned chunk-name TString without anchoring
++it on the Lua stack.  Parsing allocations can run the collector, leaving
++the lexer with a dangling pointer.  Keep the name live until close_func()
++finishes.  This is the upstream Redis Lua 5.1 fix without Redis paths.
++---
++ src/lparser.c | 6 +++++-
++ 1 file changed, 5 insertions(+), 1 deletion(-)
++
++--- a/src/lparser.c
+++++ b/src/lparser.c
++@@ -382,14 +382,18 @@ Proto *luaY_parser (lua_State *L, ZIO *
++   struct LexState lexstate;
++   struct FuncState funcstate;
++   lexstate.buff = buff;
++-  luaX_setinput(L, &lexstate, z, luaS_new(L, name));
+++  TString *tname = luaS_new(L, name);
+++  setsvalue2s(L, L->top, tname);
+++  incr_top(L);
+++  luaX_setinput(L, &lexstate, z, tname);
++   open_func(&lexstate, &funcstate);
++   funcstate.f->is_vararg = VARARG_ISVARARG;  /* main func. is always vararg */
++   luaX_next(&lexstate);  /* read first token */
++   chunk(&lexstate);
++   check(&lexstate, TK_EOS);
++   close_func(&lexstate);
+++  --L->top;
++   lua_assert(funcstate.prev == NULL);
++   lua_assert(funcstate.f->nups == 0);
+diff --git a/package/utils/lua/patches/420-unpack-signed-overflow.patch b/package/utils/lua/patches/420-unpack-signed-overflow.patch
+new file mode 100644
+index 0000000..88ac72a
+--- /dev/null
++++ b/package/utils/lua/patches/420-unpack-signed-overflow.patch
+@@ -0,0 +1,31 @@
++From: SBE1V1K maintenance
++Date: Sun, 14 Sep 2026 00:00:00 +0000
++Subject: Lua 5.1: avoid signed overflow in unpack bounds
++
++Origin: https://www.lua.org/bugs.html#5.2.3-1
++
++The old `e - i + 1` check uses signed overflow, so an optimizing compiler
++may discard the intended overflow guard.  Adapt Lua's official fix to the
++5.1 location in lbaselib.c.  Keep n bounded before converting the result
++back to the C API's int return value.
++---
++ src/lbaselib.c | 8 ++++----
++ 1 file changed, 4 insertions(+), 4 deletions(-)
++
++--- a/src/lbaselib.c
+++++ b/src/lbaselib.c
++@@ -350,10 +350,11 @@ static int luaB_unpack (lua_State *L) {
++-  int i, e, n;
+++  int i, e;
+++  unsigned int n;
++   luaL_checktype(L, 1, LUA_TTABLE);
++   i = luaL_optint(L, 2, 1);
++   e = luaL_opt(L, luaL_checkint, 3, luaL_getn(L, 1));
++   if (i > e) return 0;  /* empty range */
++-  n = e - i + 1;  /* number of elements */
++-  if (n <= 0 || !lua_checkstack(L, n))  /* n <= 0 means arith. overflow */
+++  n = (unsigned int)e - (unsigned int)i;  /* number of elements minus 1 */
+++  if (n > (INT_MAX - 10) || !lua_checkstack(L, ++n))
++     return luaL_error(L, "too many results to unpack");
++   lua_rawgeti(L, 1, i);  /* push arg[i] (avoiding overflow problems) */
++   while (i++ < e)  /* push arg[i + 1...e] */
+diff --git a/package/utils/lua/patches/430-parser-line-overflow.patch b/package/utils/lua/patches/430-parser-line-overflow.patch
+new file mode 100644
+index 0000000..27d7738
+--- /dev/null
++++ b/package/utils/lua/patches/430-parser-line-overflow.patch
+@@ -0,0 +1,22 @@
++From: SBE1V1K maintenance
++Date: Sun, 14 Sep 2026 00:00:00 +0000
++Subject: Lua 5.1: report line counter overflow without current token
++
++Origin: https://www.lua.org/bugs.html#5.2.3-3
++
++When the line counter reaches its limit before a token is initialized,
++luaX_syntaxerror reads that uninitialized token.  Call the lower-level
++diagnostic with token 0, matching the official fix's semantics.
++---
++ src/llex.c | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++--- a/src/llex.c
+++++ b/src/llex.c
++@@ -141,7 +141,7 @@ static void inclinenumber (LexState *ls
++   if (currIsNewline(ls) && ls->current != old)
++     next(ls);  /* skip `\n\r' or `\r\n' */
++   if (++ls->linenumber >= MAX_INT)
++-    luaX_syntaxerror(ls, "chunk has too many lines");
+++    luaX_lexerror(ls, "chunk has too many lines", 0);
++ }

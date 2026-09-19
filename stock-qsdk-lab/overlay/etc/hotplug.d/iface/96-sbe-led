@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+[ "${INTERFACE:-}" = wan ] || exit 0
+config_load sbe-hardware
+config_get_bool track_wan status track_wan 1
+[ "$track_wan" = 1 ] || {
+	/usr/sbin/sbe-led ready
+	exit
+}
+case "${ACTION:-}" in
+	ifup) /usr/sbin/sbe-led connected ;;
+	ifdown) /usr/sbin/sbe-led disconnected ;;
+esac

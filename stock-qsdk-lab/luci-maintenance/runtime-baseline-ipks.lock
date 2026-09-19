@@ -1,0 +1,8 @@
+# sha256	filename under stock-qsdk-lab/cache/ipk; compatibility reference only
+249fcf5b6085482b9714ba742085efdb161ec9a61444fc420905555a099680e8	libiwinfo-lua_2019-10-16-07315b6f-1_aarch64_generic.ipk
+56a5eda878d2e305c1af63671db9efe6e76522a368dab0d2f05e1eff01b2f710	libiwinfo20181126_2019-10-16-07315b6f-1_aarch64_generic.ipk
+4aa957423ff9d3989c09194925cb227733d6aef5c13d3a82707dba271eb5b20f	liblua5.1.5_5.1.5-3_aarch64_generic.ipk
+feadd01de4f646b4b0daa10a891692f730a4590e98270fa9bfd74540e91fe646	libubus-lua_2022-02-21-b32a0e17-1_aarch64_generic.ipk
+62bfe59018da1e294ecf13b07c626813c416fe011792f171efd77dd3f8594c93	libuci-lua_2019-09-01-415f9e48-4_aarch64_generic.ipk
+5e6efe63e56a61a2ed49aa447a130fb306937828a93f1305c23d96d90578d3d1	lua_5.1.5-3_aarch64_generic.ipk
+

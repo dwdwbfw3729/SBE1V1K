@@ -1,0 +1,171 @@
+#!/bin/sh
+# Prove a hash-bound, physical-p28 boot with a volatile overlay.  This command
+# never commits a boot slot; its optional receipt exists only in /tmp.
+set -eu
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+LC_ALL=C
+export PATH LC_ALL
+umask 077
+
+TARGET=/dev/mmcblk0p28
+TARGET_PARTUUID=2e7f836f-adc0-a80a-f968-2e570c0674b6
+FALLBACK_SHA=8488a757a29b05ef66393b25504ddc3e9dcc82041c46e217949300a68ee4818c
+HLOS_SHA=5717e40e7a52a3876aee223ede2004886947e0803d8f967f35f1a00548aad3e5
+BOOTCONFIG_SHA=a4bf76fde1406ec8624c4807dccedaacf15e3da6c7a93bb385f06fd73d33b06e
+APPSBLENV_SHA=d38fd05b6dfb7c9ab26714c0ea4fda9a974540c03a8f225aaf0f738ba312702d
+
+fail() {
+	printf 'sbe-slot-confirm: refusing: %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	printf '%s\n' \
+		'usage: sbe-slot-confirm' \
+		'       sbe-slot-confirm --record CONFIRM-P28-BOOT' >&2
+	exit 2
+}
+
+mode=dry-run
+case "$#:${1:-}" in
+	0:) ;;
+	2:--record)
+		[ "$2" = CONFIRM-P28-BOOT ] || fail "exact confirmation token is required"
+		mode=record
+		;;
+	*) usage ;;
+esac
+
+sim_root=${SBE_FIRMWARE_SIM_ROOT:-}
+root_prefix=
+if [ -n "$sim_root" ]; then
+	case "$sim_root" in
+		/tmp/sbe-firmware-sim.*) ;;
+		*) fail "simulation root must be a dedicated /tmp/sbe-firmware-sim.* directory" ;;
+	esac
+	[ -d "$sim_root" ] && [ ! -L "$sim_root" ] || fail "invalid simulation root"
+	[ -f "$sim_root/.sbe-firmware-simulation-v1" ] && \
+		[ ! -L "$sim_root/.sbe-firmware-simulation-v1" ] || fail "simulation sentinel is missing"
+	[ "$(cat "$sim_root/.sbe-firmware-simulation-v1")" = regular-files-only ] || \
+		fail "simulation sentinel is invalid"
+	root_prefix=$sim_root
+else
+	[ "$(id -u)" = 0 ] || fail "slot confirmation must run as root"
+fi
+
+host_path() {
+	printf '%s%s\n' "$root_prefix" "$1"
+}
+
+cmdline=$(cat "$(host_path /proc/cmdline)" 2>/dev/null) || fail "kernel command line is unavailable"
+has_bootarg() {
+	printf '%s\n' "$cmdline" | tr ' ' '\n' | grep -Fqx "$1"
+}
+bootarg_value() {
+	prefix=$1
+	printf '%s\n' "$cmdline" | tr ' ' '\n' | awk -v prefix="$prefix" '
+		index($0, prefix) == 1 { value = substr($0, length(prefix) + 1); count++ }
+		END { if (count != 1 || value == "") exit 1; print value }
+	'
+}
+
+has_bootarg "root=PARTUUID=$TARGET_PARTUUID" || fail "kernel root is not exact p28"
+has_bootarg sbe_p28_trial=1 || fail "p28 trial marker is absent"
+has_bootarg sbe_ram_trial=1 || fail "volatile-overlay marker is absent"
+has_bootarg sbe_persistent=1 && fail "persistent overlay was requested"
+has_bootarg root=/dev/ram0 && fail "this is an initramfs boot, not the physical p28 trial"
+
+candidate_sha=$(bootarg_value sbe_candidate_sha256=) || fail "candidate hash boot argument is invalid"
+case "$candidate_sha" in ''|*[!0-9a-f]*) fail "candidate hash is not lowercase SHA-256" ;; esac
+[ "${#candidate_sha}" -eq 64 ] || fail "candidate hash is not lowercase SHA-256"
+release_id=$(bootarg_value sbe_release_id=) || fail "release id boot argument is invalid"
+case "$release_id" in ''|*[!A-Za-z0-9._+-]*) fail "release id boot argument is unsafe" ;; esac
+case "$release_id" in [A-Za-z0-9]*) ;; *) fail "release id must start with an alphanumeric character" ;; esac
+[ "${#release_id}" -le 64 ] || fail "release id boot argument is too long"
+
+[ "$(cat "$(host_path /tmp/sbe-overlay-mode)" 2>/dev/null)" = ram-trial ] || \
+	fail "root overlay is not the volatile RAM trial overlay"
+
+target=$(host_path "$TARGET")
+if [ -n "$root_prefix" ]; then
+	[ -f "$target" ] && [ ! -L "$target" ] || fail "simulated p28 is not a regular file"
+else
+	[ -b "$target" ] || fail "p28 block device is unavailable"
+fi
+sysfs=$(host_path /sys/class/block/mmcblk0p28)
+grep -Fqx 'DEVNAME=mmcblk0p28' "$sysfs/uevent" || fail "p28 DEVNAME mismatch"
+grep -Fqx 'PARTNAME=rootfs_1' "$sysfs/uevent" || fail "p28 PARTNAME mismatch"
+grep -Fqx "PARTUUID=$TARGET_PARTUUID" "$sysfs/uevent" || fail "p28 PARTUUID mismatch"
+[ "$(cat "$sysfs/start")" = 360482 ] || fail "p28 start-sector mismatch"
+[ "$(cat "$sysfs/size")" = 249856 ] || fail "p28 sector-count mismatch"
+target_devnum=$(cat "$sysfs/dev" 2>/dev/null) || fail "p28 device number is unavailable"
+printf '%s\n' "$target_devnum" | grep -Eq '^[0-9]+:[0-9]+$' || \
+	fail "invalid p28 device number"
+mountinfo=$(host_path /proc/self/mountinfo)
+[ -r "$mountinfo" ] || fail "mountinfo is unavailable"
+awk -v devnum="$target_devnum" '
+	$3 == devnum && ($5 == "/" || $5 == "/rom") { found=1 }
+	END { exit found ? 0 : 1 }
+' "$mountinfo" || fail "p28 is not the mounted physical root below the overlay"
+
+actual_candidate_sha=$(sha256sum "$target" | awk '{print $1}')
+[ "$actual_candidate_sha" = "$candidate_sha" ] || fail "booted p28 does not match the hash-bound launcher"
+
+hash_protected() {
+	device=$(host_path "$1")
+	actual=$(sha256sum "$device" | awk '{print $1}')
+	if [ -z "$root_prefix" ]; then
+		[ "$actual" = "$2" ] || fail "$3 changed: $actual"
+	fi
+	printf 'verified %-12s %s\n' "$3" "$actual"
+}
+
+hash_protected /dev/mmcblk0p3 "$BOOTCONFIG_SHA" bootconfig
+hash_protected /dev/mmcblk0p4 "$BOOTCONFIG_SHA" bootconfig_1
+hash_protected /dev/mmcblk0p17 "$APPSBLENV_SHA" APPSBLENV
+hash_protected /dev/mmcblk0p25 "$HLOS_SHA" HLOS
+hash_protected /dev/mmcblk0p27 "$FALLBACK_SHA" rootfs
+
+for config in bootconfig0 bootconfig1; do
+	for partition in rootfs 0:HLOS; do
+		base=$(host_path "/proc/boot_info/$config/$partition")
+		[ "$(cat "$base/primaryboot" 2>/dev/null)" = 0 ] || \
+			fail "$config/$partition no longer selects the factory primary slot"
+		[ "$(cat "$base/upgradepartition" 2>/dev/null)" = 1 ] || \
+			fail "$config/$partition inactive-slot mapping changed"
+	done
+done
+[ "$(cat "$(host_path /proc/upgrade_info/trybit)" 2>/dev/null)" = 0 ] || fail "upgrade trybit changed"
+[ "$(cat "$(host_path /proc/upgrade_info/trymode_inprogress)" 2>/dev/null)" = 0 ] || \
+	fail "upgrade try mode changed"
+
+healthcheck=$(host_path /usr/sbin/sbe-healthcheck)
+[ -x "$healthcheck" ] && [ ! -L "$healthcheck" ] || fail "healthcheck is unavailable"
+SBE_FIRMWARE_SIM_ROOT="$sim_root" "$healthcheck" || fail "healthcheck failed"
+
+if [ "$mode" = dry-run ]; then
+	printf '%s\n' \
+		"CONFIRM DRY-RUN PASS: physical p28 $candidate_sha is healthy with a RAM overlay." \
+		'No confirmation receipt or persistent storage was changed.' \
+		'Power loss or a normal cold boot still follows untouched Bootconfig/APPSBLENV to factory p27.'
+	exit 0
+fi
+
+receipt=$(host_path /tmp/sbe-p28-boot-confirmed)
+[ ! -e "$receipt" ] && [ ! -L "$receipt" ] || fail "confirmation receipt already exists"
+temporary="${receipt}.new.$$"
+[ ! -e "$temporary" ] && [ ! -L "$temporary" ] || fail "temporary receipt exists"
+{
+	printf 'format=sbe1v1k-p28-boot-confirmation-v1\n'
+	printf 'release_id=%s\n' "$release_id"
+	printf 'image_sha256=%s\n' "$candidate_sha"
+	printf 'root_partuuid=%s\n' "$TARGET_PARTUUID"
+	printf 'overlay=ram-trial\n'
+	printf 'fallback=rootfs-p27-cold-boot\n'
+} > "$temporary"
+chmod 600 "$temporary"
+mv "$temporary" "$receipt"
+printf '%s\n' \
+	"CONFIRM PASS: volatile receipt recorded at $receipt." \
+	'No boot selector was committed; failure rollback remains a normal cold boot to factory p27.'

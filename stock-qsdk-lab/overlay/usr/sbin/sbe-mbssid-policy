@@ -1,0 +1,141 @@
+#!/bin/sh
+
+# Select a visible transmit VAP for a QCA 6 GHz multi-BSS radio by
+# canonicalizing only the vendor UCI knob which QSDK already consumes.
+# The caller owns wireless lifecycle serialization and radio reloads.
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+functions_file=${SBE_MBSSID_FUNCTIONS:-/lib/functions.sh}
+uci_cmd=${SBE_MBSSID_UCI:-/sbin/uci}
+
+[ -r "$functions_file" ] || {
+	echo "sbe-mbssid-policy: missing UCI functions: $functions_file" >&2
+	exit 1
+}
+[ -x "$uci_cmd" ] || {
+	echo "sbe-mbssid-policy: missing UCI command: $uci_cmd" >&2
+	exit 1
+}
+
+. "$functions_file" || exit 1
+
+changed=0
+mutation_failed=0
+target_device=
+visible_aps=
+visible_selected_aps=
+enabled_ap_count=0
+selected_ap_count=0
+visible_selected_ap_count=0
+
+collect_ap() {
+	local section="$1" device mode disabled hidden selected
+
+	config_get device "$section" device
+	[ "$device" = "$target_device" ] || return 0
+
+	config_get mode "$section" mode
+	[ "$mode" = "ap" ] || return 0
+
+	config_get_bool disabled "$section" disabled 0
+	[ "$disabled" -eq 0 ] || return 0
+
+	enabled_ap_count=$((enabled_ap_count + 1))
+
+	config_get_bool hidden "$section" hidden 0
+	[ "$hidden" -eq 0 ] && \
+		visible_aps="${visible_aps}${visible_aps:+ }$section"
+
+	config_get selected "$section" mbss_tx_vdev
+	[ "$selected" = "1" ] || return 0
+
+	selected_ap_count=$((selected_ap_count + 1))
+	if [ "$hidden" -eq 0 ]; then
+		visible_selected_aps="${visible_selected_aps}${visible_selected_aps:+ }$section"
+		visible_selected_ap_count=$((visible_selected_ap_count + 1))
+	fi
+}
+
+write_ap_selection() {
+	local section="$1" device mode disabled current
+
+	config_get device "$section" device
+	[ "$device" = "$target_device" ] || return 0
+	config_get mode "$section" mode
+	[ "$mode" = "ap" ] || return 0
+	config_get_bool disabled "$section" disabled 0
+	[ "$disabled" -eq 0 ] || return 0
+	config_get current "$section" mbss_tx_vdev
+
+	if [ "$section" = "$chosen_ap" ]; then
+		[ "$current" = "1" ] && return 0
+		if "$uci_cmd" -q set "wireless.$section.mbss_tx_vdev=1"; then
+			changed=1
+		else
+			mutation_failed=1
+		fi
+	elif [ -n "$current" ]; then
+		if "$uci_cmd" -q delete "wireless.$section.mbss_tx_vdev"; then
+			changed=1
+		else
+			mutation_failed=1
+		fi
+	fi
+}
+
+normalize_radio() {
+	local section="$1" type band disabled chosen_ap
+
+	config_get type "$section" type
+	[ "$type" = "qcawificfg80211" ] || return 0
+	config_get band "$section" band
+	[ "$band" = "3" ] || return 0
+	config_get_bool disabled "$section" disabled 0
+	[ "$disabled" -eq 0 ] || return 0
+
+	target_device="$section"
+	visible_aps=
+	visible_selected_aps=
+	enabled_ap_count=0
+	selected_ap_count=0
+	visible_selected_ap_count=0
+	config_foreach collect_ap wifi-iface
+
+	# Single-BSS radios, disabled APs and an all-hidden set retain their exact
+	# configuration.  There is no safe visible transmit candidate in those
+	# cases and no reason to manufacture an MBSSID setting.
+	[ "$enabled_ap_count" -ge 2 ] || return 0
+	[ -n "$visible_aps" ] || return 0
+
+	# Preserve the existing selection only when exactly one selected AP is
+	# visible.  With duplicate selections, retain the first visible selected AP;
+	# with a hidden or absent selection, choose the first visible enabled AP.
+	if [ "$selected_ap_count" -eq 1 ] && \
+	   [ "$visible_selected_ap_count" -eq 1 ]; then
+		chosen_ap="$visible_selected_aps"
+	elif [ "$visible_selected_ap_count" -gt 0 ]; then
+		chosen_ap="${visible_selected_aps%% *}"
+	else
+		chosen_ap="${visible_aps%% *}"
+	fi
+
+	config_foreach write_ap_selection wifi-iface
+}
+
+normalize_all() {
+	config_load wireless || return 1
+	config_foreach normalize_radio wifi-device
+	[ "$mutation_failed" -eq 0 ] || return 1
+	[ "$changed" -eq 1 ] || return 0
+	"$uci_cmd" -q commit wireless
+}
+
+case "${1:-}" in
+	normalize) normalize_all ;;
+	*)
+		echo 'usage: sbe-mbssid-policy normalize' >&2
+		exit 2
+	;;
+esac

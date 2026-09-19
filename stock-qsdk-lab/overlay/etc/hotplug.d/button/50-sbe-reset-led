@@ -1,0 +1,6 @@
+#!/bin/sh
+
+[ "${BUTTON:-}" = reset ] || exit 0
+[ "${ACTION:-}" = pressed ] || exit 0
+/usr/sbin/sbe-led reset
+

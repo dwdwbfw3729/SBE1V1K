@@ -1,0 +1,36 @@
+# Curated userland for the stock QSDK base.  Keep this deliberately small:
+# kernel modules and QSDK core packages must always come from the factory image.
+
+# Local management plane.
+dnsmasq
+dropbear
+odhcpd-ipv6only
+luci-base
+luci-mod-admin-full
+luci-theme-bootstrap
+luci-app-firewall
+luci-app-upnp
+luci-proto-ipv6
+luci-proto-ppp
+ppp
+ppp-mod-pppoe
+miniupnpd
+uhttpd
+uhttpd-mod-ubus
+libuci-lua
+luci-i18n-base-zh-cn
+luci-i18n-firewall-zh-cn
+
+# Dynamic DNS is supplied by the exact-hash, source-matched five-package
+# component profile. Do not pull separate unaudited feed copies into the seed.
+
+# Complete the existing UPnP page's Simplified Chinese translation.
+luci-i18n-upnp-zh-cn
+
+# Do not fetch the legacy 19.07 builds from this feed.  The daily-router
+# production profile already restores rpcd-mod-rrdns, mtr, htop and
+# nano from exact-hash, reproducible QSDK/AArch64 candidates.  This file is
+# only the legacy-feed dependency seed; it is not the final image inventory.
+
+# SBE1V1K has no exposed USB connector.  Removable-storage userland
+# (block-mount, blkid, usbutils and ntfs-3g) is deliberately absent.

@@ -1,0 +1,21 @@
+# build_target	package	version	architecture	control_source
+package/feeds/luci/luci-lib-ip	luci-lib-ip	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/libs/luci-lib-ip
+package/feeds/luci/luci-lib-jsonc	luci-lib-jsonc	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/libs/luci-lib-jsonc
+package/feeds/luci/luci-lib-nixio	luci-lib-nixio	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/libs/luci-lib-nixio
+package/feeds/luci/rpcd-mod-luci	rpcd-mod-luci	20201107-2	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/libs/rpcd-mod-luci
+package/feeds/luci/luci-base	luci-base	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/modules/luci-base
+package/feeds/luci/luci-base	luci-i18n-base-zh-cn	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/modules/luci-base
+package/feeds/luci/luci-compat	luci-compat	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/modules/luci-compat
+package/feeds/luci/luci-mod-status	luci-mod-status	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	qca/feeds/luci/modules/luci-mod-status
+package/feeds/luci/luci-mod-system	luci-mod-system	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/modules/luci-mod-system
+package/feeds/luci/luci-mod-network	luci-mod-network	git-22.283.16672-4b50d79-9	all	qca/feeds/luci/modules/luci-mod-network
+package/feeds/luci/luci-mod-admin-full	luci-mod-admin-full	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/modules/luci-mod-admin-full
+package/feeds/luci/luci-app-firewall	luci-app-firewall	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-firewall
+package/feeds/luci/luci-app-firewall	luci-i18n-firewall-zh-cn	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-firewall
+package/feeds/luci/luci-app-opkg	luci-app-opkg	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-opkg
+package/feeds/luci/luci-app-opkg	luci-i18n-opkg-zh-cn	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-opkg
+package/feeds/luci/luci-app-upnp	luci-app-upnp	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-upnp
+package/feeds/luci/luci-app-upnp	luci-i18n-upnp-zh-cn	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/applications/luci-app-upnp
+package/feeds/luci/luci-proto-ipv6	luci-proto-ipv6	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/protocols/luci-proto-ipv6
+package/feeds/luci/luci-proto-ppp	luci-proto-ppp	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/protocols/luci-proto-ppp
+package/feeds/luci/luci-theme-bootstrap	luci-theme-bootstrap	git-22.283.16672-4b50d79-8	all	qca/feeds/luci/themes/luci-theme-bootstrap

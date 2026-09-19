@@ -1,0 +1,12 @@
+config random_seed 'random_seed'
+	option enabled '1'
+	option interval '21600'
+	option bytes '512'
+
+config watchdog 'watchdog'
+	option enabled '0'
+	option interval '60'
+	option tmp_percent '85'
+	option conntrack_percent '85'
+	option file_percent '85'
+	option zombie_limit '20'

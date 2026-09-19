@@ -1,0 +1,386 @@
+#!/bin/sh
+# SBE1V1K dedicated writable-root policy.
+#
+# Persistence is selected either by the explicit boot argument used by the
+# stock loader, or by the exact p27 root argument emitted by the audited
+# SBE1V1K HTTP chainloader.  A legacy RAMDisk executes /init and takes the
+# initramfs hook; a physical root boot executes /sbin/init and takes
+# 80_mount_root.
+
+SBE_OVERLAY_LABEL=rootfs_data_1
+SBE_OVERLAY_DEVICE=mmcblk0p30
+SBE_OVERLAY_START=1658914
+SBE_OVERLAY_SECTORS=1048576
+SBE_OVERLAY_STATE=/overlay/openwrt
+
+sbe_overlay_log() {
+	echo "sbe-overlay: $*" >/dev/kmsg 2>/dev/null || echo "sbe-overlay: $*"
+}
+
+sbe_cmdline_has() {
+	grep -qw "$1" /proc/cmdline 2>/dev/null
+}
+
+sbe_p30_device() {
+	local device name sysfs partname start sectors
+	device="$(find_mmc_part "$SBE_OVERLAY_LABEL")"
+	[ -b "$device" ] || return 1
+	name="${device##*/}"
+	[ "$name" = "$SBE_OVERLAY_DEVICE" ] || return 1
+	sysfs="/sys/class/block/$name"
+	[ -r "$sysfs/uevent" ] || return 1
+	partname="$(sed -n 's/^PARTNAME=//p' "$sysfs/uevent")"
+	start="$(cat "$sysfs/start" 2>/dev/null)"
+	sectors="$(cat "$sysfs/size" 2>/dev/null)"
+	[ "$partname" = "$SBE_OVERLAY_LABEL" ] || return 1
+	[ "$start" = "$SBE_OVERLAY_START" ] || return 1
+	[ "$sectors" = "$SBE_OVERLAY_SECTORS" ] || return 1
+	printf '%s\n' "$device"
+}
+
+sbe_overlay_mount_is_p30() {
+	local device="$1" target="${2:-/overlay}"
+	awk -v device="$device" -v target="$target" '
+		$1 == device && $2 == target && $3 == "ext4" {
+			n=split($4, option, ",")
+			for (i=1; i<=n; i++) {
+				if (option[i] == "rw") rw=1
+				if (option[i] == "nodev") nodev=1
+				if (option[i] == "nosuid") nosuid=1
+			}
+		}
+		END { exit !(rw && nodev && nosuid) }
+	' /proc/mounts
+}
+
+sbe_private_mode() {
+	local mode
+	mode=$(stat -c %a "$1" 2>/dev/null) || return 1
+	case "$mode" in
+		[0-7][2367][0-7]|[0-7][0-7][2367]) return 1 ;;
+		[0-7][0-7][0-7]) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+sbe_private_directory() {
+	[ -d "$1" ] && [ ! -L "$1" ] && [ -O "$1" ] && sbe_private_mode "$1"
+}
+
+sbe_vendor_wifi_layout_is_private() {
+	local vendor=/overlay/vendor wifi=/overlay/vendor/wifi item name bytes
+	[ -e "$vendor" ] || return 0
+	sbe_private_directory "$vendor" || return 1
+	for item in "$vendor"/* "$vendor"/.[!.]* "$vendor"/..?*; do
+		[ -e "$item" ] || [ -L "$item" ] || continue
+		[ "$item" = "$wifi" ] || return 1
+	done
+	sbe_private_directory "$wifi" || return 1
+	for item in "$wifi"/* "$wifi"/.[!.]* "$wifi"/..?*; do
+		[ -e "$item" ] || [ -L "$item" ] || continue
+		name=${item##*/}
+		case "$name" in
+			wlfw_cal_01_QCN9224_PCI1.bin|wlfw_cal_01_QCN9224_PCI2.bin|wlfw_cal_01_QCN9224_PCI3.bin) ;;
+			*) return 1 ;;
+		esac
+		[ -f "$item" ] && [ ! -L "$item" ] && [ -O "$item" ] && sbe_private_mode "$item" || return 1
+		bytes=$(stat -c %s "$item" 2>/dev/null) || return 1
+		case "$bytes" in ''|*[!0-9]*) return 1 ;; esac
+		[ "$bytes" -gt 0 ] && [ "$bytes" -le 8388608 ] || return 1
+	done
+}
+
+sbe_overlay_layout_is_private() {
+	local item name
+	for item in /overlay/* /overlay/.[!.]* /overlay/..?*; do
+		[ -e "$item" ] || [ -L "$item" ] || continue
+		name="${item##*/}"
+		case "$name" in
+			lost+found|openwrt) ;;
+			vendor) sbe_vendor_wifi_layout_is_private || return 1 ;;
+			*)
+			sbe_overlay_log "refusing unexpected p30 entry: $name"
+			return 1
+			;;
+		esac
+	done
+	return 0
+}
+
+sbe_overlay_restore_interrupted_reset() {
+	local state="$1"
+	[ -f "$state/.factory-reset-pending" ] || return 0
+	[ -d "$state/upper.previous" ] || {
+		sbe_overlay_log "reset rollback metadata is incomplete"
+		return 1
+	}
+	sbe_overlay_log "previous reset did not reach multi-user; rolling it back"
+	rm -rf "$state/upper" "$state/work"
+	mv "$state/upper.previous" "$state/upper" || return 1
+	if [ -d "$state/work.previous" ]; then
+		mv "$state/work.previous" "$state/work" || return 1
+	else
+		mkdir -m 700 "$state/work" || return 1
+	fi
+	rm -f "$state/.factory-reset-pending"
+	return 0
+}
+
+sbe_overlay_finish_committed_reset() {
+	local state="$1"
+	[ -f "$state/.factory-reset-committed" ] || return 0
+	sbe_overlay_log "finalizing previously committed factory reset"
+	rm -rf "$state/upper.previous" "$state/work.previous"
+	rm -f "$state/.factory-reset-committed"
+}
+
+sbe_overlay_begin_factory_reset() {
+	local state="$1"
+	[ -f "$state/.factory-reset" ] || return 0
+	[ ! -e "$state/upper.previous" ] || return 1
+	[ ! -e "$state/work.previous" ] || return 1
+	sbe_overlay_log "starting transactional factory reset"
+	mv "$state/upper" "$state/upper.previous" || return 1
+	mv "$state/work" "$state/work.previous" || {
+		mv "$state/upper.previous" "$state/upper"
+		return 1
+	}
+	mkdir -m 700 "$state/upper" "$state/work" || {
+		rm -rf "$state/upper" "$state/work"
+		mv "$state/upper.previous" "$state/upper"
+		mv "$state/work.previous" "$state/work"
+		return 1
+	}
+	mv "$state/.factory-reset" "$state/.factory-reset-pending" || {
+		rm -rf "$state/upper" "$state/work"
+		mv "$state/upper.previous" "$state/upper"
+		mv "$state/work.previous" "$state/work"
+		return 1
+	}
+}
+
+sbe_overlay_restore_upgrade_backup() {
+	local state="$1" archive="$1/.sysupgrade.tgz"
+	local plain=/tmp/sbe-sysupgrade-restore.tar list=/tmp/sbe-sysupgrade-restore.list
+	local bytes
+
+	[ -e "$archive" ] || return 0
+	[ -f "$state/.factory-reset-pending" ] || return 1
+	[ -f "$archive" ] && [ ! -L "$archive" ] || return 1
+	bytes=$(wc -c < "$archive" 2>/dev/null) || return 1
+	case "$bytes" in ''|*[!0-9]*) return 1 ;; esac
+	[ "$bytes" -gt 0 ] && [ "$bytes" -le 16777216 ] || return 1
+	gzip -t "$archive" 2>/dev/null || return 1
+	rm -f "$plain" "$list"
+	(
+		ulimit -f 131072
+		gzip -dc "$archive" > "$plain"
+	) 2>/dev/null || return 1
+	/usr/libexec/sbe-backup-validate "$plain" > "$list" || {
+		rm -f "$plain" "$list"
+		return 1
+	}
+	tar -xzf "$archive" -C / || {
+		rm -f "$plain" "$list"
+		return 1
+	}
+	rm -f "$plain" "$list" "$archive"
+	sync
+	sbe_overlay_log 'restored validated configuration into the clean upgraded overlay'
+}
+
+sbe_persist_legacy_accounts() {
+	local account path source target mode temporary
+	# Previous images backed up passwd/group as vendor /tmp links. Restoring
+	# those links over regular image defaults must not leave accounts dangling.
+	for account in passwd group shadow; do
+		path=/etc/$account
+		mode=644
+		[ "$account" != shadow ] || mode=600
+		if [ -L "$path" ]; then
+			target=$(readlink "$path") || return 1
+			[ "$target" = "/tmp/etc/$account" ] || return 1
+			source=$target
+			if [ ! -f "$source" ] || [ -L "$source" ]; then
+				# passwd/group link-only backups carry no account data. Use the
+				# new image defaults, but never reset a missing password database.
+				[ "$account" != shadow ] || return 1
+				source=/rom/etc/$account
+			fi
+			[ -f "$source" ] && [ ! -L "$source" ] || return 1
+			grep -q '^root:' "$source" || return 1
+			temporary=$(mktemp /etc/.sbe-account.XXXXXX) || return 1
+			if ! cp "$source" "$temporary" || ! chmod "$mode" "$temporary" ||
+			   ! mv -f "$temporary" "$path"; then
+				rm -f "$temporary"
+				return 1
+			fi
+		fi
+		[ -f "$path" ] && [ ! -L "$path" ] || return 1
+		[ "$(stat -c %a "$path")" = "$mode" ] || chmod "$mode" "$path" || return 1
+	done
+}
+
+sbe_ram_overlay() {
+	sbe_overlay_log "$1; using volatile tmpfs overlay"
+	umount /mnt 2>/dev/null || true
+	umount /overlay 2>/dev/null || true
+	ramoverlay || {
+		sbe_overlay_log "fatal: tmpfs overlay pivot failed"
+		return 1
+	}
+	mkdir -p /data
+	mount -o bind /tmp/root /data 2>/dev/null || true
+	mkdir -p -m 700 /data/openwrt 2>/dev/null || true
+	printf '%s\n' "${2:-ram-fallback}" > /tmp/sbe-overlay-mode
+	return 0
+}
+
+sbe_persistent_overlay() {
+	local device state="$SBE_OVERLAY_STATE"
+	device="$(sbe_p30_device)" || {
+		sbe_ram_overlay "p30 identity or geometry check failed" ram-fallback
+		return
+	}
+
+	mkdir -p /overlay
+	mount -t ext4 -o rw,noatime,nosuid,nodev "$device" /overlay || {
+		sbe_ram_overlay "p30 ext4 mount failed (no repair attempted)" ram-fallback
+		return
+	}
+	sbe_overlay_mount_is_p30 "$device" || {
+		sbe_ram_overlay "p30 mount verification failed" ram-fallback
+		return
+	}
+	sbe_overlay_layout_is_private || {
+		sbe_ram_overlay "p30 is not an isolated OpenWrt data partition" ram-fallback
+		return
+	}
+	mkdir -p -m 700 /overlay/vendor/wifi || {
+		sbe_ram_overlay "cannot create p30 Wi-Fi calibration namespace" ram-fallback
+		return
+	}
+	chmod 700 /overlay/vendor /overlay/vendor/wifi || {
+		sbe_ram_overlay "cannot protect p30 Wi-Fi calibration namespace" ram-fallback
+		return
+	}
+	sbe_vendor_wifi_layout_is_private || {
+		sbe_ram_overlay "invalid p30 Wi-Fi calibration namespace" ram-fallback
+		return
+	}
+
+	[ ! -L /overlay/openwrt ] || {
+		sbe_ram_overlay "p30 OpenWrt state is a symlink" ram-fallback
+		return
+	}
+	mkdir -p -m 700 "$state" || {
+		sbe_ram_overlay "cannot create p30 OpenWrt namespace" ram-fallback
+		return
+	}
+	[ -f "$state/.layout-v1" ] || printf '%s\n' sbe1v1k-p30-overlay-v1 > "$state/.layout-v1"
+
+	if [ ! -e "$state/upper" ]; then
+		mkdir -m 700 "$state/upper" || {
+			sbe_ram_overlay "cannot create overlay upperdir" ram-fallback
+			return
+		}
+	fi
+	if [ ! -e "$state/work" ]; then
+		mkdir -m 700 "$state/work" || {
+			sbe_ram_overlay "cannot create overlay workdir" ram-fallback
+			return
+		}
+	fi
+	[ -d "$state/upper" ] && [ ! -L "$state/upper" ] && \
+		[ -d "$state/work" ] && [ ! -L "$state/work" ] || {
+		sbe_ram_overlay "invalid overlay upper/work directory" ram-fallback
+		return
+	}
+
+	sbe_overlay_finish_committed_reset "$state" || {
+		sbe_ram_overlay "cannot finalize old reset" ram-fallback
+		return
+	}
+	sbe_overlay_restore_interrupted_reset "$state" || {
+		sbe_ram_overlay "cannot roll back interrupted reset" ram-fallback
+		return
+	}
+	sbe_overlay_begin_factory_reset "$state" || {
+		sbe_ram_overlay "cannot start factory reset transaction" ram-fallback
+		return
+	}
+
+	fopivot "$state/upper" "$state/work" /rom || {
+		# fopivot may have mounted /mnt before pivot_root failed.  Restore the
+		# reset transaction while the p30 upper is not active.
+		umount /mnt 2>/dev/null || true
+		if [ -f "$state/.factory-reset-pending" ]; then
+			rm -rf "$state/upper" "$state/work"
+			mv "$state/upper.previous" "$state/upper" 2>/dev/null || true
+			mv "$state/work.previous" "$state/work" 2>/dev/null || true
+			rm -f "$state/.factory-reset-pending"
+		fi
+		sbe_ram_overlay "persistent overlay pivot failed" ram-fallback
+		return
+	}
+	# The stock pivot() intentionally ignores errors while moving auxiliary
+	# mounts.  Verify its /overlay move and retry it once before declaring a
+	# degraded (but still bootable) persistent root.
+	if ! sbe_overlay_mount_is_p30 "$device"; then
+		if sbe_overlay_mount_is_p30 "$device" /rom/overlay; then
+			mount -o move /rom/overlay /overlay 2>/dev/null || true
+		fi
+	fi
+	if ! sbe_overlay_mount_is_p30 "$device"; then
+		printf '%s\n' persistent-degraded > /tmp/sbe-overlay-mode
+		sbe_overlay_log "warning: root is persistent but p30 state mount was not moved"
+		return
+	fi
+
+	mkdir -p /data
+	mount -o bind /overlay /data || sbe_overlay_log "warning: /data compatibility bind failed"
+	printf '%s\n' persistent > /tmp/sbe-overlay-mode
+	if ! sbe_overlay_restore_upgrade_backup "$state"; then
+		touch /tmp/sbe-upgrade-restore-failed
+		sbe_overlay_log "warning: upgraded configuration restore failed; reset rollback remains pending"
+	fi
+	if ! sbe_persist_legacy_accounts; then
+		touch /tmp/sbe-upgrade-restore-failed
+		sbe_overlay_log "warning: legacy account migration failed; reset rollback remains pending"
+	fi
+	# 81_urandom_seed from the operator image is removed.  Load and rotate our
+	# root-owned seed only after the p30 compatibility path and persistent UCI
+	# view exist, but before rc services generate Dropbear/uhttpd keys.
+	/usr/sbin/sbe-random-seed load >/dev/null 2>&1 || \
+		sbe_overlay_log "warning: persistent random seed was not loaded"
+	sbe_overlay_log "persistent root active on $device"
+}
+
+# 42_mount_askey_partition registered this function name before this file was
+# sourced.  Redefining it replaces the operator partition fan-out with exactly
+# one audited root-layer action.
+do_mount_askey_partition() {
+	if sbe_cmdline_has sbe_ram_trial=1; then
+		sbe_ram_overlay "RAM trial requested" ram-trial
+	elif sbe_cmdline_has sbe_persistent=1; then
+		sbe_persistent_overlay
+	elif sbe_cmdline_has root=/dev/mmcblk0p27; then
+		# YYH2913/http-uboot a69ed135b54d deliberately emits only the
+		# mainline root argument.  Accept that one exact, audited installed
+		# root; do not generalize this to PARTUUID, PARTLABEL, or another slot.
+		sbe_overlay_log "audited HTTP-chainloader p27 root detected"
+		sbe_persistent_overlay
+	else
+		sbe_ram_overlay "no persistent-mode boot argument" ram-fallback
+	fi
+}
+
+sbe_overlay_initramfs() {
+	# 70_initramfs_test stops the normal preinit_main chain before the
+	# 80_mount_root hook.  Run the already registered board mount hook through
+	# the dedicated initramfs stack so RAM trials also receive a writable root.
+	sbe_cmdline_has sbe_ram_trial=1 || return 0
+	boot_run_hook preinit_mount_root
+}
+
+boot_hook_add initramfs sbe_overlay_initramfs

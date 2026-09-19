@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: QSDK LuCI maintenance <noreply@localhost>
+Date: Wed, 16 Sep 2026 00:20:00 +0800
+Subject: [PATCH] luci-theme-bootstrap: link footer to exact QSDK source
+
+The displayed branch and version identify Qualcomm's QSDK LuCI fork, while
+the inherited footer URL points to the upstream OpenWrt LuCI repository.
+Link the attribution to the exact locked CodeLinaro commit instead.
+---
+ .../luasrc/view/themes/bootstrap/footer.htm                    | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/footer.htm b/themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/footer.htm
+--- a/themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/footer.htm
++++ b/themes/luci-theme-bootstrap/luasrc/view/themes/bootstrap/footer.htm
+@@ -8,7 +8,7 @@
+ <% local ver = require "luci.version" %>
+ 
+    <footer>
+-    <a href="https://github.com/openwrt/luci">Powered by <%= ver.luciname %> (<%= ver.luciversion %>)</a> / <%= ver.distversion %>
++    <a href="https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci/-/commit/4b50d7975bd312fd0e5b28b95b67fb372cfa9da7">Powered by <%= ver.luciname %> (<%= ver.luciversion %>)</a> / <%= ver.distversion %>
+     <ul class="breadcrumb pull-right" id="modemenu" style="display:none"></ul>
+    </footer>
+   </div>
+-- 
+2.39.5

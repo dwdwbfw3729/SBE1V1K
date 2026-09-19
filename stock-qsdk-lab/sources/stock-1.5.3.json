@@ -1,0 +1,26 @@
+{
+  "format": "sbe1v1k-stock-source-v1",
+  "release": "1.5.3-14-652192-g202604022107",
+  "filename": "SCP_1.5.3-14-652192-g202604022107-SBE1V1K-prod.simg",
+  "url": "http://scpfirmware.tau.spectrum.net/SCP_1.5.3-14-652192-g202604022107-SBE1V1K-prod.simg",
+  "size": 56796600,
+  "sha256": "29bd146baf66b535cba7fe7af58864db65133cfac07ce66297da905c57eb9ec9",
+  "fit_description": "Askey_RTQ7300T_SCP_Sysupgrade_Image",
+  "components": [
+    "sbl1",
+    "tz",
+    "devcfg",
+    "apdp",
+    "rpm",
+    "u-boot",
+    "wifi_fw_ipq9574_qcn9000_qcn9224_v2",
+    "hlos-askey",
+    "rootfs-askey"
+  ],
+  "partition_bytes": {
+    "0:HLOS": 7340032,
+    "rootfs": 127926272,
+    "WIFIFW": 10485760
+  },
+  "rootfs_source_date_epoch": 1650412800
+}

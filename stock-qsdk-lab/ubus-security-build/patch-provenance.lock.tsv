@@ -1,0 +1,28 @@
+# patch	classification	upstream_commit_or_commits	scope
+090-ubusd-event-null-data.patch	exact-backport	2bebf93cd3343fe49f22a05ef935e460d2d44f67	daemon malformed INVOKE NULL-data guards
+100-CVE-2025-62526-event-pattern-length.patch	exact-backport	d31effb4277bd557f5ccf16d909422718c1e49d0	daemon empty event-pattern rejection
+110-pattern-length-checks.patch	exact-backport	aa4a7ee1d3417bc11207ad0a78d579ece7fe0c13	daemon empty ACL and lookup-pattern rejection
+120-event-listen-acl.patch	exact-backport	60e04048a0e2f3e33651c19e62861b41be4c290f	daemon wildcard listen ACL enforcement
+130-libubus-shutdown-uloop-fd-delete.patch	exact-backport	f787c97b34894a38b15599886cacbca01271684f	client uloop lifetime
+140-libubus-close-deferred-request-fd.patch	exact-backport	d996988ae55b6af12e4611fdd758a2f0ad27a9a1	client deferred-request FD ownership
+150-libubus-queue-msg-oom.patch	exact-backport	4b274055ede3d58ceaf2ddb21bd20bcb3d26532f	client queued-message OOM
+160-libubus-acl-stable-oom-state.patch	exact-backport	8b5be570f13e49adf0ccc1c4fb77b0649992842d	client ACL-state OOM lifetime
+170-ubusd-acl-object-oom.patch	exact-backport	9105ea2a349a2f0de334e8b661baa76e21e47d13	daemon ACL-object OOM
+180-ubusd-client-credential-oom.patch	baseline-adaptation	07d7f34ac278c28817b41c8814df2cc1d303495f	daemon legacy user/group allocation subset; no extra_gid in baseline
+190-ubusd-acl-init-object-oom.patch	exact-backport	497321a5ea90093fbf05d786a120afd3f8bdb6fb	daemon ACL built-in object OOM
+200-ubusd-event-send-oom.patch	exact-backport	f66d52ba983fc588f25d56c419a9101fe24a0e53	daemon event-send OOM propagation
+210-ubusd-sighup-self-pipe.patch	baseline-adaptation	11ea1b3bdbea5ec5bd27fefff661a5f1b970d384	daemon async-signal-safe ACL reload bridge
+220-ubusd-new-client-cleanup.patch	exact-backport	0c095592ccb79053dd02a57bf006dde2bd26ad28	daemon client-init resource lifetime
+230-ubusd-watch-null-credentials.patch	exact-backport	f61695e6e12a622f6d6408c444f162ea6f13fdac	daemon fail-closed NULL credentials
+240-ubusd-retmsg-oom.patch	exact-backport	7ecacfadd9bca05fae69690207c11ab894489e3f	daemon reply-buffer OOM
+250-ubusd-monitor-oom.patch	exact-backport	7e4356da8abea2351643962376bc91bbc9e8ad5c	daemon monitor-message OOM
+260-libubus-request-fd-ownership.patch	exact-backport	5849870f2251e7ca67804510446a4d6ca9e9dba2	client request SCM_RIGHTS ownership
+270-libubus-message-fd-ownership.patch	baseline-adaptation	f29767f90af112040cdf8a1ee402e5d3d48115b3	client applicable legacy message FD paths; no channel API in baseline
+275-ubusd-tx-queue-accounting.patch	baseline-adaptation	27839f854a58d9dbc85efa1b5cd79f253880c701+8bb523ab20e06f686a07c5f82e8f8534d4228b9f	daemon signed partial-write and complete wire-length accounting
+280-libubus-idempotent-shutdown.patch	exact-backport	b099d050b59d83f6f0962ac0cf8e5afd80678049	client idempotent FD/buffer teardown
+290-ubusd-queue-ref-oom.patch	exact-backport	09d2df45bf3862fc259d5b1e1527c8777e2e5d23	daemon queued-message reference OOM
+300-libubus-socket-cloexec.patch	baseline-adaptation	bcc45ca981fd61e11934776bcee18f628156a7f7	client reconnect socket subset; no channel-connect API in baseline
+310-libubus-recv-fd-error-cleanup.patch	exact-backport	8188f5ce8564e7f4114e2db2dded1e6361957b2a	client receive-error SCM_RIGHTS ownership
+320-libubus-reconnect-stale-fd.patch	exact-backport	747013f6ea05a168d000531553f8de90f8b87b7f	client reconnect stale-FD lifetime
+330-ubusd-acl-size-t-allocation.patch	exact-backport	020a64b9b1693295a3fde34147aef48bf47c76ae	daemon variadic allocation width
+340-ubusd-length-types.patch	exact-backport	f92ffd289dcc07b20d0fcf34e10e5c685240e5bd	daemon string/blob length widths

@@ -1,0 +1,18 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -35,6 +35,15 @@ AM_INIT_AUTOMAKE([])
+ AC_CONFIG_HEADERS([config.h])
+ AC_CONFIG_MACRO_DIR([m4])
+ AM_MAINTAINER_MODE
++
++dnl The release tarball does not ship libgcrypt's AM_PATH_LIBGCRYPT macro.
++dnl Crypto is disabled in this router candidate, but an unexpanded invocation
++dnl still makes the generated configure script invalid shell.  When the macro
++dnl is unavailable, expand its caller-supplied failure branch.  An explicit
++dnl --enable-crypto therefore still fails closed instead of silently building.
++m4_ifndef([AM_PATH_LIBGCRYPT], [
++AC_DEFUN([AM_PATH_LIBGCRYPT], [$3])
++])
+ 
+ # Options
+ AC_ARG_ENABLE(

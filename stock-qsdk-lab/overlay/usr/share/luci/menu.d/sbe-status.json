@@ -1,0 +1,13 @@
+{
+	"admin/status/sbe-hardware": {
+		"title": "Hardware Status",
+		"order": 8,
+		"action": {
+			"type": "view",
+			"path": "status/sbe-hardware"
+		},
+		"depends": {
+			"acl": [ "luci-app-sbe-status" ]
+		}
+	}
+}

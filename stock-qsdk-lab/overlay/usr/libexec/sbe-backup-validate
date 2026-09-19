@@ -1,0 +1,249 @@
+#!/usr/bin/lua
+
+-- Validator for the uncompressed tar stream used by the configuration-only
+-- backup interface.  Accept portable regular files, directories and safe
+-- symbolic links while rejecting traversal, link-parent extraction, devices,
+-- hard links, extended records and oversized archives.
+
+local archive = arg[1]
+local max_archive = 64 * 1024 * 1024
+local max_payload = 32 * 1024 * 1024
+local max_file = 4 * 1024 * 1024
+local max_entries = 2048
+
+local function fail(message)
+	io.stderr:write("Invalid SBE1V1K configuration backup: ", message, "\n")
+	os.exit(1)
+end
+
+if not archive or arg[2] then
+	fail("validator expects exactly one uncompressed tar file")
+end
+
+local handle, open_error = io.open(archive, "rb")
+if not handle then
+	fail(open_error or "cannot open archive")
+end
+
+local archive_size = handle:seek("end")
+if not archive_size or archive_size < 1024 or archive_size > max_archive then
+	fail("uncompressed archive size is outside the 1 KiB to 64 MiB limit")
+end
+handle:seek("set", 0)
+
+local function is_all_zero(value)
+	if value == "" then
+		return false
+	end
+	for index = 1, #value do
+		if value:byte(index) ~= 0 then
+			return false
+		end
+	end
+	return true
+end
+
+local function tar_field(header, first, last)
+	local value = header:sub(first, last)
+	local nul = value:find("\0", 1, true)
+	if nul then
+		value = value:sub(1, nul - 1)
+	end
+	return (value:gsub(" +$", ""))
+end
+
+local function octal_field(header, first, last, label)
+	local value = tar_field(header, first, last):gsub("^ +", "")
+	if value == "" then
+		return 0
+	end
+	if value:find("[^0-7]") then
+		fail(label .. " is not a portable octal value")
+	end
+	local number = tonumber(value, 8)
+	if not number then
+		fail(label .. " is invalid")
+	end
+	return number
+end
+
+local function portable_path(path)
+	if path == "" or path:sub(1, 1) == "/" or path:sub(1, 2) == "./" or
+		path:find("//", 1, true) then
+		return false
+	end
+	for component in path:gmatch("[^/]+") do
+		if component == "." or component == ".." then
+			return false
+		end
+	end
+	for index = 1, #path do
+		local byte = path:byte(index)
+		local character = path:sub(index, index)
+		local alpha_numeric = (byte >= 48 and byte <= 57) or
+			(byte >= 65 and byte <= 90) or (byte >= 97 and byte <= 122)
+		if not alpha_numeric and not string.find("._@+,:/-", character, 1, true) then
+			return false
+		end
+	end
+	return true
+end
+
+local function link_stays_in_root(path, target)
+	if target == "" then
+		return false
+	end
+	for index = 1, #target do
+		local byte = target:byte(index)
+		if byte < 32 or byte > 126 then
+			return false
+		end
+	end
+
+	local components = {}
+	if target:sub(1, 1) ~= "/" then
+		local parent = path:match("^(.*)/[^/]+$") or ""
+		for component in parent:gmatch("[^/]+") do
+			components[#components + 1] = component
+		end
+	end
+	for component in target:gmatch("[^/]+") do
+		if component == ".." then
+			if #components == 0 then
+				return false
+			end
+			components[#components] = nil
+		elseif component ~= "." then
+			components[#components + 1] = component
+		end
+	end
+	return true
+end
+
+local entries = {}
+local files = {}
+local links = {}
+local payload_size = 0
+local entry_count = 0
+local saw_end = false
+
+while true do
+	local header = handle:read(512)
+	if not header or #header ~= 512 then
+		fail("truncated tar header")
+	end
+	if is_all_zero(header) then
+		local remaining = handle:read("*a") or ""
+		if #remaining < 512 or not is_all_zero(remaining) then
+			fail("tar end marker is missing or followed by non-zero data")
+		end
+		saw_end = true
+		break
+	end
+
+	entry_count = entry_count + 1
+	if entry_count > max_entries then
+		fail("archive contains more than 2048 entries")
+	end
+
+	local stored_checksum = octal_field(header, 149, 156, "checksum")
+	local calculated_checksum = 0
+	for index = 1, 512 do
+		if index >= 149 and index <= 156 then
+			calculated_checksum = calculated_checksum + 32
+		else
+			calculated_checksum = calculated_checksum + header:byte(index)
+		end
+	end
+	if stored_checksum ~= calculated_checksum then
+		fail("tar header checksum mismatch")
+	end
+
+	local magic = header:sub(258, 263)
+	if magic:sub(1, 5) ~= "ustar" then
+		fail("only portable ustar archives are accepted")
+	end
+
+	local name = tar_field(header, 1, 100)
+	local prefix = tar_field(header, 346, 500)
+	if prefix ~= "" then
+		name = prefix .. "/" .. name
+	end
+	local type_flag = header:sub(157, 157)
+	local link_name = tar_field(header, 158, 257)
+	local size = octal_field(header, 125, 136, "entry size")
+	local mode = octal_field(header, 101, 108, "entry mode")
+
+	if name:sub(-1) == "/" then
+		if type_flag ~= "5" then
+			fail("only directory headers may have a trailing slash")
+		end
+		name = name:sub(1, -2)
+	end
+	if not portable_path(name) then
+		fail("non-portable or traversing path: " .. name)
+	end
+	if entries[name] then
+		fail("duplicate archive entry: " .. name)
+	end
+	entries[name] = type_flag
+	if mode > 511 then
+		fail("set-id, sticky or non-portable mode bits are not accepted")
+	end
+
+	if type_flag == "\0" or type_flag == "0" then
+		if link_name ~= "" then
+			fail("regular file unexpectedly has a link target")
+		end
+		if size > max_file then
+			fail("individual file exceeds 4 MiB: " .. name)
+		end
+		payload_size = payload_size + size
+		if payload_size > max_payload then
+			fail("total file payload exceeds 32 MiB")
+		end
+		files[#files + 1] = name
+	elseif type_flag == "5" then
+		if size ~= 0 or link_name ~= "" then
+			fail("directory has payload data or a link target: " .. name)
+		end
+	elseif type_flag == "2" then
+		if size ~= 0 or not link_stays_in_root(name, link_name) then
+			fail("symbolic link is empty, non-portable or escapes root: " .. name)
+		end
+		links[name] = link_name
+		files[#files + 1] = name
+	else
+		fail("hard links, devices and extended tar records are not accepted")
+	end
+
+	local padded_size = math.floor((size + 511) / 512) * 512
+	local left = padded_size
+	while left > 0 do
+		local chunk = handle:read(math.min(left, 65536))
+		if not chunk or #chunk == 0 then
+			fail("truncated entry payload")
+		end
+		left = left - #chunk
+	end
+end
+
+handle:close()
+if not saw_end or #files == 0 then
+	fail("archive contains no restorable configuration files")
+end
+
+for path, _ in pairs(entries) do
+	local parent = path:match("^(.*)/[^/]+$")
+	while parent do
+		if links[parent] then
+			fail("archive entry has a symbolic-link parent: " .. path)
+		end
+		parent = parent:match("^(.*)/[^/]+$")
+	end
+end
+
+table.sort(files)
+for _, path in ipairs(files) do
+	io.write(path, "\n")
+end

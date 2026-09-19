@@ -1,0 +1,428 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: QSDK LuCI maintenance <noreply@localhost>
+Date: Tue, 15 Sep 2026 08:00:00 +0800
+Subject: [PATCH] luci-mod-network: support qcawificfg80211 settings
+
+Keep the native wireless view and specialize only the vendor driver paths.
+Build the QCA band selector from iwinfo frequencies, keep it visible even for
+a single detected band, retain the configured hwmode token, and expose only
+channel widths supported by iwinfo, current configuration, or the validated
+per-band QCA maximum-width API.
+
+Translate the native personal-security choices to the qcawificfg80211 UCI
+flags.  Enterprise modes remain unavailable because their vendor mapping is
+not established.
+---
+ .../luci-static/resources/view/network/wireless.js | 310 ++++++++++++++++++++-
+ 1 file changed, 309 insertions(+), 1 deletion(-)
+
+diff --git a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+index baecab1b4e1bd57a42274ccdeca3814d2dd69f94..237f4bbe3a4decdff906e953c808d4bb724880dd 100644
+--- a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
++++ b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+@@ -287,6 +287,189 @@ function add_dependency_permutations(o, deps) {
+ 		o.depends(res[i]);
+ }
+ 
++function qcaWifiType(type) {
++	return type == 'qcawificfg80211';
++}
++
++function qcaFrequencyBand(mhz) {
++	mhz = +mhz;
++
++	if (mhz >= 2400 && mhz <= 2500)
++		return '2g';
++	else if (mhz >= 5925 && mhz <= 7125)
++		return '6g';
++	else if (mhz > 2500 && mhz < 5925)
++		return '5g';
++
++	return null;
++}
++
++function qcaCanonicalHTMode(value) {
++	var match = String(value || '').toUpperCase().match(/^(?:HT|VHT|HE|EHT)(20|40|80|160|320)(?:[+-])?$/);
++	return match ? 'HT' + match[1] : null;
++}
++
++function qcaWidthValues(htmodes, current, band, maxwidth) {
++	var limit = { '2g': 40, '5g': 160, '6g': 320 }[band] || 0,
++	    order = [ 20, 40, 80, 160, 320 ],
++	    values = L.toArray(htmodes).concat([ current ]),
++	    supported = {}, reported = +maxwidth;
++
++	for (var i = 0; i < values.length; i++) {
++		var canonical = qcaCanonicalHTMode(values[i]),
++		    width = canonical ? +canonical.substring(2) : 0;
++
++		if (width && width <= limit)
++			supported[width] = true;
++	}
++
++	if (order.indexOf(reported) >= 0)
++		for (var j = 0; j < order.length; j++)
++			if (order[j] <= limit && order[j] <= reported)
++				supported[order[j]] = true;
++
++	return order.filter(function(width) {
++		return supported[width];
++	}).map(function(width) {
++		return 'HT' + width;
++	});
++}
++
++function qcaInitialFrequencyBand(freqlist, hwmode, channel, qca_band) {
++	var available = {}, matching = [], bands = [ '2g', '5g', '6g' ];
++
++	for (var i = 0; i < freqlist.length; i++) {
++		var band = qcaFrequencyBand(freqlist[i].mhz);
++		if (band)
++			available[band] = true;
++	}
++
++	if (String(qca_band) == '3' && available['6g'])
++		return '6g';
++
++	if (channel != null && !/^auto$/i.test(String(channel)) && +channel != 0) {
++		for (var j = 0; j < freqlist.length; j++) {
++			var match_band = qcaFrequencyBand(freqlist[j].mhz);
++			if (match_band && +freqlist[j].channel == +channel && matching.indexOf(match_band) < 0)
++				matching.push(match_band);
++		}
++
++		if (matching.length == 1)
++			return matching[0];
++
++		if (/(?:^|11)(?:a|na|ac|axa|bea)$/.test(String(hwmode || '').toLowerCase())) {
++			var non_2g = matching.filter(function(band) { return band != '2g'; });
++			if (non_2g.length == 1)
++				return non_2g[0];
++		}
++	}
++
++	if (/(?:^|11)(?:b|g|bg|ng|axg|beg)$/.test(String(hwmode || '').toLowerCase()) && available['2g'])
++		return '2g';
++
++	for (var k = 0, found = []; k < bands.length; k++)
++		if (available[bands[k]])
++			found.push(bands[k]);
++
++	if (found.length == 1)
++		return found[0];
++
++	return available['5g'] ? '5g' : (found[0] || '');
++}
++
++function qcaFrequencyPlan(type, values) {
++	if (!qcaWifiType(type))
++		return null;
++
++	var plan = { channel: values[2] || 'auto' },
++	    htmode = qcaCanonicalHTMode(values[0]);
++	if (htmode)
++		plan.htmode = htmode;
++
++	return plan;
++}
++
++function qcaEncryptionCfgValue(type, values) {
++	if (!qcaWifiType(type))
++		return null;
++
++	var raw = String(values.encryption || 'none').toLowerCase(),
++	    sae = String(values.sae || '0') == '1',
++	    owe = String(values.owe || '0') == '1',
++	    pmf = String(values.ieee80211w || '0'),
++	    suite_b = String(values.suite_b || '0');
++
++	if (suite_b == '0' && sae && !owe && pmf == '2' && raw == 'ccmp')
++		return 'sae';
++	else if (suite_b == '0' && sae && !owe && pmf == '1' && raw == 'psk2+ccmp')
++		return 'sae-mixed';
++	else if (suite_b == '0' && owe && !sae && pmf == '2' && raw == 'ccmp')
++		return 'owe';
++	else if (/^psk2(?:\+(?:ccmp|aes))?$/.test(raw))
++		return 'psk2';
++	else if (raw == 'wep')
++		return 'wep-open';
++	else if (raw.match(/\+/))
++		return raw.replace(/\+.+$/, '');
++
++	return raw;
++}
++
++function qcaEncryptionPlan(type, value, cipher) {
++	if (!qcaWifiType(type))
++		return null;
++
++	var is_sae = (value == 'sae' || value == 'sae-mixed'),
++	    is_owe = (value == 'owe'),
++	    plan = {
++		set: {},
++		unset: [ 'sae', 'owe', 'suite_b', 'ieee80211w', 'group_mgmt_cipher',
++			'add_sha256', 'add_sha384', 'wpa_key_mgmt' ]
++	};
++
++	if (!is_sae)
++		plan.unset.push('sae_pwe', 'sae_require_mfp', 'sae_password', 'sae_groups');
++	if (!is_owe)
++		plan.unset.push('owe_group', 'owe_groups', 'owe_transition_bssid',
++			'owe_transition_ssid', 'owe_transition_ifname', 'owe_ptk_workaround');
++	if (!is_sae && !is_owe)
++		plan.unset.push('ieee80211w_max_timeout', 'ieee80211w_retry_timeout');
++
++	switch (value) {
++	case 'psk2':
++		plan.set.encryption = (cipher == 'ccmp') ? 'psk2+ccmp' : 'psk2';
++		break;
++	case 'sae':
++		plan.set.encryption = 'ccmp';
++		plan.set.sae = '1';
++		plan.set.sae_pwe = '1';
++		plan.set.ieee80211w = '2';
++		break;
++	case 'sae-mixed':
++		plan.set.encryption = 'psk2+ccmp';
++		plan.set.sae = '1';
++		plan.set.sae_pwe = '1';
++		plan.set.ieee80211w = '1';
++		break;
++	case 'owe':
++		plan.set.encryption = 'ccmp';
++		plan.set.owe = '1';
++		plan.set.ieee80211w = '2';
++		break;
++	case 'wep-open':
++	case 'wep-shared':
++		plan.set.encryption = value;
++		break;
++	case 'none':
++		plan.set.encryption = 'none';
++		break;
++	default:
++		return null;
++	}
++
++	return plan;
++}
++
+ var CBIWifiFrequencyValue = form.Value.extend({
+ 	callFrequencyList: rpc.declare({
+ 		object: 'iwinfo',
+@@ -300,6 +481,52 @@ var CBIWifiFrequencyValue = form.Value.extend({
+ 			network.getWifiDevice(section_id),
+ 			this.callFrequencyList(section_id)
+ 		]).then(L.bind(function(data) {
++			this.isQCA = qcaWifiType(uci.get('wireless', section_id, 'type'));
++
++			if (this.isQCA) {
++				var freqlist = data[1],
++				    htmodelist = L.toArray(data[0] ? data[0].getHTModes() : null),
++				    maxwidths = data[0] ? data[0].ubus('dev', 'qca_max_widths') : null,
++				    htval = uci.get('wireless', section_id, 'htmode'),
++				    hwval = uci.get('wireless', section_id, 'hwmode'),
++				    chval = uci.get('wireless', section_id, 'channel'),
++				    qca_band = uci.get('wireless', section_id, 'band'),
++				    band_names = { '2g': '2.4 GHz', '5g': '5 GHz', '6g': '6 GHz' },
++				    band_order = [ '2g', '5g', '6g' ];
++
++				this.channels = { '2g': [ 'auto', 'auto', true ], '5g': [ 'auto', 'auto', true ], '6g': [ 'auto', 'auto', true ] };
++
++				for (var i = 0; i < freqlist.length; i++) {
++					var band = qcaFrequencyBand(freqlist[i].mhz);
++					if (band)
++						this.channels[band].push(
++							freqlist[i].channel,
++							'%d (%d Mhz)'.format(freqlist[i].channel, freqlist[i].mhz),
++							!freqlist[i].restricted
++						);
++				}
++
++				this.modes = [ '', '-', true ];
++				this.bands = { '': [] };
++				this.qcaHtmodes = {};
++				this.qcaInitialBand = qcaInitialFrequencyBand(freqlist, hwval, chval, qca_band);
++
++				for (var j = 0; j < band_order.length; j++) {
++					var band = band_order[j];
++					if (this.channels[band].length <= 3)
++						continue;
++
++					this.bands[''].push(band, band_names[band], true);
++					this.qcaHtmodes[band] = [];
++
++					var widths = qcaWidthValues(htmodelist, (band == this.qcaInitialBand) ? htval : null,
++						band, maxwidths ? maxwidths[band] : null);
++					for (var k = 0; k < widths.length; k++)
++						this.qcaHtmodes[band].push(widths[k], '%d MHz'.format(+widths[k].substring(2)), true);
++				}
++				return;
++			}
++
+ 			this.channels = {
+ 				'11g': L.hasSystemFeature('hostapd', 'acs') ? [ 'auto', 'auto', true ] : [],
+ 				'11a': L.hasSystemFeature('hostapd', 'acs') ? [ 'auto', 'auto', true ] : []
+@@ -381,15 +608,25 @@ var CBIWifiFrequencyValue = form.Value.extend({
+ 		var mode = elem.querySelector('.mode');
+ 		var bwdt = elem.querySelector('.htmode');
+ 
++		if (this.isQCA) {
++			this.setValues(bwdt, this.qcaHtmodes[elem.querySelector('.band').value]);
++			return;
++		}
++
+ 		this.setValues(bwdt, this.htmodes[mode.value]);
+ 	},
+ 
+ 	toggleWifiBand: function(elem) {
+ 		var mode = elem.querySelector('.mode');
+ 		var band = elem.querySelector('.band');
+ 
+ 		this.setValues(band, this.bands[mode.value]);
++		if (this.isQCA)
++			band.parentNode.style.display = '';
+ 		this.toggleWifiChannel(elem);
++
++		if (this.isQCA)
++			this.toggleWifiHTMode(elem);
+ 	},
+ 
+ 	toggleWifiChannel: function(elem) {
+@@ -410,6 +647,16 @@ var CBIWifiFrequencyValue = form.Value.extend({
+ 
+ 		this.setValues(mode, this.modes);
+ 
++		if (this.isQCA) {
++			mode.value = '';
++			this.toggleWifiMode(elem);
++			band.value = this.qcaInitialBand;
++			this.toggleWifiBand(elem);
++			bwdt.value = qcaCanonicalHTMode(htval) || '';
++			chan.value = (chval == null || +chval == 0 || /^auto$/i.test(String(chval))) ? 'auto' : chval;
++			return elem;
++		}
++
+ 		if (/VHT20|VHT40|VHT80|VHT160/.test(htval))
+ 			mode.value = 'ac';
+ 		else if (/HT20|HT40/.test(htval))
+@@ -491,6 +738,15 @@ var CBIWifiFrequencyValue = form.Value.extend({
+ 	},
+ 
+ 	write: function(section_id, value) {
++		if (this.isQCA) {
++			var plan = qcaFrequencyPlan(uci.get('wireless', section_id, 'type'), value);
++			if (!plan)
++				return;
++			for (var option in plan)
++				uci.set('wireless', section_id, option, plan[option]);
++			return;
++		}
++
+ 		uci.set('wireless', section_id, 'htmode', value[0] || null);
+ 		uci.set('wireless', section_id, 'hwmode', value[1]);
+ 		uci.set('wireless', section_id, 'channel', value[2]);
+@@ -848,7 +1106,11 @@ return view.extend({
+ 
+ 		s.addModalOptions = function(s) {
+ 			return network.getWifiNetwork(s.section).then(function(radioNet) {
+-				var hwtype = uci.get('wireless', radioNet.getWifiDeviceName(), 'type');
++				var radio_name = radioNet.getWifiDeviceName(),
++				    hwtype = uci.get('wireless', radio_name, 'type'),
++				    is_qca = qcaWifiType(hwtype),
++				    is_qca_6g = is_qca && (String(uci.get('wireless', radio_name, 'band')) == '3' ||
++					String(uci.get('wireless', radio_name, 'htmode')).toUpperCase() == 'HT320');
+ 				var o, ss;
+ 
+ 				o = s.option(form.SectionValue, '_device', form.NamedSection, radioNet.getWifiDeviceName(), 'wifi-device', _('Device Configuration'));
+@@ -1117,6 +1379,15 @@ return view.extend({
+ 				o.depends('mode', 'mesh');
+ 
+ 				o.cfgvalue = function(section_id) {
++					if (is_qca)
++						return qcaEncryptionCfgValue(hwtype, {
++							encryption: uci.get('wireless', section_id, 'encryption'),
++							sae: uci.get('wireless', section_id, 'sae'),
++							owe: uci.get('wireless', section_id, 'owe'),
++							ieee80211w: uci.get('wireless', section_id, 'ieee80211w'),
++							suite_b: uci.get('wireless', section_id, 'suite_b')
++						});
++
+ 					var v = String(uci.get('wireless', section_id, 'encryption'));
+ 					if (v == 'wep')
+ 						return 'wep-open';
+@@ -1129,6 +1400,19 @@ return view.extend({
+ 					var e = this.section.children.filter(function(o) { return o.option == 'encryption' })[0].formvalue(section_id),
+ 					    co = this.section.children.filter(function(o) { return o.option == 'cipher' })[0], c = co.formvalue(section_id);
+ 
++					if (is_qca) {
++						var plan = qcaEncryptionPlan(hwtype, e, c);
++
++						if (plan) {
++							for (var i = 0; i < plan.unset.length; i++)
++								uci.unset('wireless', section_id, plan.unset[i]);
++							for (var option in plan.set)
++								uci.set('wireless', section_id, option, plan.set[option]);
++						}
++
++						return;
++					}
++
+ 					if (value == 'wpa' || value == 'wpa2' || value == 'wpa3' || value == 'wpa3-mixed')
+ 						uci.unset('wireless', section_id, 'key');
+ 
+@@ -1151,10 +1435,21 @@ return view.extend({
+ 				o.value('ccmp', _('Force CCMP (AES)'));
+ 				o.value('tkip', _('Force TKIP'));
+ 				o.value('tkip+ccmp', _('Force TKIP and CCMP (AES)'));
++
++				if (is_qca) {
++					for (var i = o.keylist.length - 1; i >= 0; i--)
++						if (/^tkip/.test(o.keylist[i])) {
++							o.keylist.splice(i, 1);
++							o.vallist.splice(i, 1);
++						}
++				}
++
+ 				o.write = ss.children.filter(function(o) { return o.option == 'encryption' })[0].write;
+ 
+ 				o.cfgvalue = function(section_id) {
+ 					var v = String(uci.get('wireless', section_id, 'encryption'));
++					if (is_qca && v == 'psk2')
++						return 'auto';
+ 					if (v.match(/\+/)) {
+ 						v = v.replace(/^[^+]+\+/, '');
+ 						if (v == 'aes')
+@@ -1284,6 +1579,18 @@ return view.extend({
+ 						return this.crypto_support[modeval][value];
+ 					};
+ 				}
++				else if (is_qca) {
++					if (is_qca_6g) {
++						crypto_modes.push(['sae', 'WPA3-SAE', 31]);
++						crypto_modes.push(['owe', 'OWE', 1]);
++					}
++					else {
++						crypto_modes.push(['psk2',      'WPA2-PSK',                      35]);
++						crypto_modes.push(['sae',       'WPA3-SAE',                      31]);
++						crypto_modes.push(['sae-mixed', 'WPA2-PSK/WPA3-SAE Mixed Mode', 30]);
++						crypto_modes.push(['owe',       'OWE',                            1]);
++					}
++				}
+ 				else if (hwtype == 'broadcom') {
+ 					crypto_modes.push(['psk2',     'WPA2-PSK',                    33]);
+ 					crypto_modes.push(['psk+psk2', 'WPA-PSK/WPA2-PSK Mixed Mode', 22]);
+@@ -1290,9 +1597,11 @@ return view.extend({
+ 					crypto_modes.push(['psk',      'WPA-PSK',                     21]);
+ 				}
+ 
++				if (!is_qca_6g) {
+ 				crypto_modes.push(['wep-open',   _('WEP Open System'), 11]);
+ 				crypto_modes.push(['wep-shared', _('WEP Shared Key'),  10]);
+ 				crypto_modes.push(['none',       _('No Encryption'),   0]);
++				}
+ 
+ 				crypto_modes.sort(function(a, b) { return b[2] - a[2] });
+ 
+-- 
+2.54.0

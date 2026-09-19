@@ -1,0 +1,35 @@
+config uhttpd 'main'
+	list listen_http '0.0.0.0:80'
+	list listen_http '[::]:80'
+	list listen_https '0.0.0.0:443'
+	list listen_https '[::]:443'
+	option redirect_https '1'
+	option home '/www'
+	option rfc1918_filter '1'
+	option max_requests '3'
+	option max_connections '100'
+	option cert '/etc/uhttpd.crt'
+	option key '/etc/uhttpd.key'
+	option cgi_prefix '/cgi-bin'
+	list lua_prefix '/cgi-bin/luci=/usr/lib/lua/luci/sgi/uhttpd.lua'
+	option script_timeout '60'
+	option network_timeout '30'
+	option http_keepalive '20'
+	# Seconds between TCP keepalive probes. One-second probes are needlessly
+	# aggressive for an interactive router UI; retain dead-peer detection
+	# without producing constant background traffic.
+	option tcp_keepalive '60'
+	option ubus_prefix '/ubus'
+
+config cert 'defaults'
+	# The factory RTC can start years behind real time before WAN/NTP is up.
+	# Generate a device-local certificate that remains usable after the clock
+	# catches up; the key is still created uniquely on the router at first boot.
+	option days '7300'
+	option key_type 'rsa'
+	option bits '2048'
+	option ec_curve 'P-256'
+	option country 'ZZ'
+	option state 'Local'
+	option location 'SBE1V1K'
+	option commonname 'SBE1V1K'

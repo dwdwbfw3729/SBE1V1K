@@ -1,0 +1,45 @@
+#!/bin/sh
+# Extract only the same configuration files consumed by the upstream restore UI.
+# Do not unpack archive paths, links, or device nodes directly into a filesystem.
+set -eu
+archive=${1:?archive required}
+destination=${2:?private destination required}
+[ -f "$archive" ] && [ ! -L "$archive" ] || exit 1
+[ -d "$destination" ] && [ ! -L "$destination" ] || exit 1
+listing=$(mktemp)
+trap 'rm -f "$listing"' EXIT HUP INT TERM
+tar -tzf "$archive" > "$listing"
+
+# Keep compatibility with tar's optional ./ prefix, but never absolute/traversal
+# paths. Extra ordinary members are ignored, as upstream only restores its list.
+awk '
+  /^\// { exit 1 }
+  /(^|\/)\.\.(\/|$)/ { exit 1 }
+' "$listing" || exit 1
+
+for member in \
+    etc/config/passwall etc/config/passwall_server \
+    usr/share/passwall/rules/block_host usr/share/passwall/rules/block_ip \
+    usr/share/passwall/rules/direct_host usr/share/passwall/rules/direct_ip \
+    usr/share/passwall/rules/proxy_host usr/share/passwall/rules/proxy_ip \
+    usr/share/passwall/rules/domains_excluded passwall-version
+do
+    found=$(awk -v member="$member" '{ name=$0; sub(/^\.\//,"",name); if(name==member) print $0 }' "$listing")
+    [ -n "$found" ] || continue
+    [ "$(printf '%s\n' "$found" | wc -l)" -eq 1 ] || exit 1
+    # No symlinks/hardlinks: -xO copies data only, with a fixed destination.
+    tar -tvzf "$archive" "$found" | awk 'substr($1,1,1)!="-" { exit 1 }' || exit 1
+    target=$destination/$member
+    mkdir -p "$(dirname "$target")"
+    tar -xOzf "$archive" "$found" > "$target"
+done
+
+if [ -f "$destination/etc/config/passwall" ] || [ -f "$destination/etc/config/passwall_server" ]; then
+    if command -v uci >/dev/null 2>&1; then
+        for config in passwall passwall_server; do
+            [ ! -f "$destination/etc/config/$config" ] || uci -q -c "$destination/etc/config" export "$config" >/dev/null
+        done
+    fi
+else
+    exit 1
+fi

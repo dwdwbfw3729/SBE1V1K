@@ -1,0 +1,43 @@
+From 4b274055ede3d58ceaf2ddb21bd20bcb3d26532f Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:06:32 +0200
+Subject: [PATCH] libubus: fix NULL dereference on OOM in ubus_queue_msg
+
+calloc_a() can return NULL under memory pressure. The returned pointer
+was used immediately without a check, causing a NULL dereference crash.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ libubus.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/libubus.c b/libubus.c
+index 5d22660..5526a9d 100644
+--- a/libubus.c
++++ b/libubus.c
+@@ -74,13 +74,19 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Note: any SCM_RIGHTS fd attached to the original message is not propagated
++ * to the queued copy — the caller must close it (or hand it off) separately.
++ */
+ static void
+ ubus_queue_msg(struct ubus_context *ctx, struct ubus_msghdr_buf *buf)
+ {
+ 	struct ubus_pending_msg *pending;
+ 	void *data;
+ 
+ 	pending = calloc_a(sizeof(*pending), &data, blob_raw_len(buf->data));
++	if (!pending)
++		return;
+ 
+ 	pending->hdr.data = data;
+ 	memcpy(&pending->hdr.hdr, &buf->hdr, sizeof(buf->hdr));
+-- 
+2.54.0 (Apple Git-157)
+
+

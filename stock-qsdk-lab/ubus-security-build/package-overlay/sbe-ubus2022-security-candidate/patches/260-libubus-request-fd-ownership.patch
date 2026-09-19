@@ -1,0 +1,54 @@
+From 5849870f2251e7ca67804510446a4d6ca9e9dba2 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Thu, 16 Apr 2026 22:23:04 +0200
+Subject: [PATCH] libubus-req: fix file descriptor leaks in
+ ubus_process_req_msg
+
+Incoming messages can carry a file descriptor via SCM_RIGHTS.  Several
+paths through ubus_process_req_msg() leaked that fd:
+
+  - UBUS_MSG_STATUS with no matching request: break without closing.
+  - UBUS_MSG_DATA: fd was never handled at all.
+
+Consolidate cleanup by closing fd at the end of the function unless it
+was handed off to req->fd_cb.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ libubus-req.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/libubus-req.c b/libubus-req.c
+index 4b718dc..8e99a62 100644
+--- a/libubus-req.c
++++ b/libubus-req.c
+@@ -487,10 +487,10 @@ void __hidden ubus_process_req_msg(struct ubus_context *ctx, struct ubus_msghdr_
+ 			break;
+ 
+ 		if (fd >= 0) {
+-			if (req->fd_cb)
++			if (req->fd_cb) {
+ 				req->fd_cb(req, fd);
+-			else
+-				close(fd);
++				fd = -1;
++			}
+ 		}
+ 
+ 		if (id >= 0)
+@@ -505,6 +505,9 @@ void __hidden ubus_process_req_msg(struct ubus_context *ctx, struct ubus_msghdr_
+ 			ubus_process_req_data(req, buf);
+ 		break;
+ 	}
++
++	if (fd >= 0)
++		close(fd);
+ }
+ 
+ int __ubus_monitor(struct ubus_context *ctx, const char *type)
+-- 
+2.54.0 (Apple Git-157)
+
+

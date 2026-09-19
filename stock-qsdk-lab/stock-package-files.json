@@ -1,0 +1,86 @@
+{
+  "libc": {
+    "files": ["/lib/libc.so", "/lib/ld-musl-aarch64.so.1"],
+    "elf_needed": {"/lib/libc.so": []}
+  },
+  "curl": {
+    "files": ["/usr/bin/curl"],
+    "Depends": "libc, libgcc1, libcurl4, libopenssl1.1, libnghttp2-14",
+    "elf_needed": {
+      "/usr/bin/curl": ["libc.so", "libcrypto.so.1.1", "libcurl.so.4", "libgcc_s.so.1", "libnghttp2.so.14", "libssl.so.1.1"]
+    }
+  },
+  "libcurl4": {
+    "files": ["/usr/lib/libcurl.so.4.7.0", "/usr/lib/libcurl.so.4"],
+    "Depends": "libc, libgcc1, libopenssl1.1, libnghttp2-14",
+    "elf_needed": {
+      "/usr/lib/libcurl.so.4.7.0": ["libc.so", "libcrypto.so.1.1", "libgcc_s.so.1", "libnghttp2.so.14", "libssl.so.1.1"]
+    }
+  },
+  "libnghttp2-14": {
+    "files": ["/usr/lib/libnghttp2.so.14.20.0", "/usr/lib/libnghttp2.so.14"],
+    "Depends": "libc, libgcc1",
+    "elf_needed": {
+      "/usr/lib/libnghttp2.so.14.20.0": ["libc.so", "libgcc_s.so.1"]
+    }
+  },
+  "libelf": {
+    "files": ["/usr/lib/libelf-0.177.so", "/usr/lib/libelf.so.1"],
+    "Depends": "libc, libgcc1, zlib",
+    "Provides": "libelf1"
+  },
+  "ip-full": {
+    "files": ["/usr/libexec/ip-full", "/usr/sbin/ip", "/sbin/ip"],
+    "Depends": "libc, libgcc1, libnl-tiny, libelf, libcap",
+    "Provides": "ip"
+  },
+  "resolveip": {
+    "files": ["/usr/bin/resolveip"],
+    "Depends": "libc, libgcc1"
+  },
+  "iptables": {
+    "files": ["/usr/sbin/xtables-legacy-multi", "/usr/sbin/iptables", "/usr/sbin/iptables-save", "/usr/sbin/iptables-restore"],
+    "Depends": "libc, libgcc1, libip4tc2, libip6tc2, libxtables12",
+    "elf_needed": {
+      "/usr/sbin/xtables-legacy-multi": ["libc.so", "libgcc_s.so.1", "libip4tc.so.2", "libip6tc.so.2", "libiptext.so", "libiptext4.so", "libiptext6.so", "libxtables.so.12"]
+    }
+  },
+  "ip6tables": {
+    "files": ["/usr/sbin/ip6tables", "/usr/sbin/ip6tables-save", "/usr/sbin/ip6tables-restore"],
+    "Depends": "iptables"
+  },
+  "ipset": {
+    "files": ["/usr/sbin/ipset"],
+    "Depends": "libc, libipset13, kmod-ipt-ipset",
+    "elf_needed": {"/usr/sbin/ipset": ["libc.so", "libipset.so.13"]}
+  },
+  "libip4tc2": {
+    "files": ["/usr/lib/libip4tc.so.2.0.0", "/usr/lib/libip4tc.so.2", "/usr/lib/libiptext4.so"],
+    "Depends": "libc, libgcc1, libxtables12",
+    "elf_needed": {
+      "/usr/lib/libip4tc.so.2.0.0": ["libc.so", "libgcc_s.so.1"],
+      "/usr/lib/libiptext4.so": ["libc.so", "libgcc_s.so.1", "libxtables.so.12"]
+    }
+  },
+  "libip6tc2": {
+    "files": ["/usr/lib/libip6tc.so.2.0.0", "/usr/lib/libip6tc.so.2", "/usr/lib/libiptext6.so"],
+    "Depends": "libc, libgcc1, libxtables12",
+    "elf_needed": {
+      "/usr/lib/libip6tc.so.2.0.0": ["libc.so", "libgcc_s.so.1"],
+      "/usr/lib/libiptext6.so": ["libc.so", "libgcc_s.so.1", "libxtables.so.12"]
+    }
+  },
+  "libxtables12": {
+    "files": ["/usr/lib/libxtables.so.12.2.0", "/usr/lib/libxtables.so.12", "/usr/lib/libiptext.so"],
+    "Depends": "libc, libgcc1",
+    "elf_needed": {
+      "/usr/lib/libxtables.so.12.2.0": ["libc.so", "libgcc_s.so.1"],
+      "/usr/lib/libiptext.so": ["libc.so", "libgcc_s.so.1", "libxtables.so.12"]
+    }
+  },
+  "libipset13": {
+    "files": ["/usr/lib/libipset.so.13.1.0", "/usr/lib/libipset.so.13"],
+    "Depends": "libc, libmnl0",
+    "elf_needed": {"/usr/lib/libipset.so.13.1.0": ["libc.so", "libmnl.so.0"]}
+  }
+}

@@ -1,0 +1,34 @@
+From: SBE core-userland compatibility build
+Subject: build only pppd and the in-tree PPPoE plugin
+
+The router candidate needs pppd and rp-pppoe only. Avoid even compiling the
+chat/stat tools or passwordfd, winbind, ATM, L2TP, RADIUS and DHCPv6 relay
+plugins; packaging filters alone would leave those attack surfaces in build
+outputs and make feature auditing ambiguous.
+
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,6 +1,6 @@
+ ACLOCAL_AMFLAGS="-Im4"
+ 
+-SUBDIRS = chat pppd pppstats pppdump
++SUBDIRS = pppd
+ 
+ if PPP_WITH_PLUGINS
+ SUBDIRS += pppd/plugins
+--- a/pppd/plugins/Makefile.am
++++ b/pppd/plugins/Makefile.am
+@@ -1,4 +1,4 @@
+-pppd_plugin_LTLIBRARIES = minconn.la passwordfd.la winbind.la
++pppd_plugin_LTLIBRARIES =
+ pppd_plugindir = $(PPPD_PLUGIN_DIR)
+ 
+ PLUGIN_CPPFLAGS = -I${top_srcdir}
+@@ -17,5 +17,5 @@
+ winbind_la_SOURCES = winbind.c
+ 
+ if !SUNOS
+-SUBDIRS = pppoe pppoatm pppol2tp radius dhcpv6relay
++SUBDIRS = pppoe
+ endif
+

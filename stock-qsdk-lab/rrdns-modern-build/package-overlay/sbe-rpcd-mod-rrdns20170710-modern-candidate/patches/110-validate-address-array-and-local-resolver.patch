@@ -1,0 +1,64 @@
+--- a/libs/rpcd-mod-rrdns/src/rrdns.c
++++ b/libs/rpcd-mod-rrdns/src/rrdns.c
+@@ -288,16 +288,13 @@
+ 	             struct ubus_request_data *req, const char *method,
+ 	             struct blob_attr *msg)
+ {
+-	int port = 53, limit = RRDNS_DEF_LIMIT, timeout = RRDNS_DEF_TIMEOUT;
++	int limit = RRDNS_DEF_LIMIT, timeout = RRDNS_DEF_TIMEOUT;
+ 	struct blob_attr *tb[__RPC_L_MAX];
+ 	struct rrdns_context *rctx;
+-	const char *server = NULL;
++	const char *server;
+ 
+ 	blobmsg_parse(rpc_lookup_policy, __RPC_L_MAX, tb,
+ 	              blob_data(msg), blob_len(msg));
+-
+-	if (tb[RPC_L_PORT])
+-		port = blobmsg_get_u16(tb[RPC_L_PORT]);
+ 
+ 	if (tb[RPC_L_LIMIT])
+ 		limit = blobmsg_get_u32(tb[RPC_L_LIMIT]);
+@@ -305,26 +302,25 @@
+ 	if (tb[RPC_L_TIMEOUT])
+ 		timeout = blobmsg_get_u32(tb[RPC_L_TIMEOUT]);
+ 
+-	if (tb[RPC_L_SERVER])
+-		server = blobmsg_get_string(tb[RPC_L_SERVER]);
+-
+-
+ 	if (!tb[RPC_L_ADDRS])
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+ 
+-	if (port <= 0)
++	if (blobmsg_check_array(tb[RPC_L_ADDRS], BLOBMSG_TYPE_STRING) < 0)
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+ 
++	/* LuCI never supplies an alternate endpoint.  Reject it so a status-only
++	 * caller cannot turn rpcd into an arbitrary UDP DNS client. */
++	if (tb[RPC_L_SERVER] || tb[RPC_L_PORT])
++		return UBUS_STATUS_INVALID_ARGUMENT;
++
+ 	if (limit <= 0 || limit > RRDNS_MAX_LIMIT)
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+ 
+ 	if (timeout <= 0 || timeout > RRDNS_MAX_TIMEOUT)
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+ 
++	server = rrdns_find_nameserver();
+ 
+-	if (!server || !*server)
+-		server = rrdns_find_nameserver();
+-
+ 	if (!server)
+ 		return UBUS_STATUS_NOT_FOUND;
+ 
+@@ -333,7 +329,7 @@
+ 	if (!rctx)
+ 		return UBUS_STATUS_UNKNOWN_ERROR;
+ 
+-	rctx->socket.fd = usock(USOCK_UDP, server, usock_port(port));
++	rctx->socket.fd = usock(USOCK_UDP, server, usock_port(53));
+ 
+ 	if (rctx->socket.fd < 0) {
+ 		free(rctx);

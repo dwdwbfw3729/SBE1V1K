@@ -1,0 +1,5 @@
+SBE1V1K Qualcomm QSDK failsafe
+
+The stock Qualcomm partition layout is protected. Use the verified
+SBE1V1K recovery workflow; firmware writes are disabled.
+Configuration backup/restore and audited p30 reset remain available.

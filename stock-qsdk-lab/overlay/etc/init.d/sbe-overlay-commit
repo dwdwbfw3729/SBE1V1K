@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+
+START=98
+
+boot() {
+	[ "$(cat /tmp/sbe-overlay-mode 2>/dev/null)" = persistent ] || return 0
+	[ ! -e /tmp/sbe-upgrade-restore-failed ] || {
+		logger -t sbe-overlay "upgrade configuration restore failed; retaining rollback transaction"
+		return 1
+	}
+	grep -q '^/dev/mmcblk0p30 /overlay ext4 ' /proc/mounts || return 0
+	state=/overlay/openwrt
+	[ -f "$state/.factory-reset-pending" ] || return 0
+	mv "$state/.factory-reset-pending" "$state/.factory-reset-committed" || return 1
+	sync
+	logger -t sbe-overlay "factory reset reached multi-user; rollback retained until next boot"
+}

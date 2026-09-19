@@ -1,0 +1,21 @@
+# package	version	architecture	filename	sha256
+luci-app-firewall	git-22.283.16672-4b50d79-8	all	luci-app-firewall_git-22.283.16672-4b50d79-8_all.ipk	a9d5418eb0210b350fc9ab7f3e6dd62644b067f606535fc22114627fb6ef31c7
+luci-app-opkg	git-22.283.16672-4b50d79-8	all	luci-app-opkg_git-22.283.16672-4b50d79-8_all.ipk	bc1cb0fb5b8e1b059166ecf633c350f74670dcc79a0f7cacefb4ac0d0b529a5e
+luci-app-upnp	git-22.283.16672-4b50d79-8	all	luci-app-upnp_git-22.283.16672-4b50d79-8_all.ipk	8d59b7c5b2d89423098a474af8ef5a12e011354c8fc0f49b190168d7ffd7bf1d
+luci-base	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	luci-base_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk	9082d38ca3d2bd90da83c0235fac06f18c2e52fc1276f21179b3112262995c40
+luci-compat	git-22.283.16672-4b50d79-8	all	luci-compat_git-22.283.16672-4b50d79-8_all.ipk	a132659b23edadf066298aec965065cf14f6c0fa5ba15747cfde68d605ef2773
+luci-i18n-base-zh-cn	git-22.283.16672-4b50d79-8	all	luci-i18n-base-zh-cn_git-22.283.16672-4b50d79-8_all.ipk	4e3c4ffc02a99ac9fbb9229727f0776fdfd0000f38a9ebdee1294923dda67d62
+luci-i18n-firewall-zh-cn	git-22.283.16672-4b50d79-8	all	luci-i18n-firewall-zh-cn_git-22.283.16672-4b50d79-8_all.ipk	2bcce781abd0e11b5bedfc57bec026fd95f274648a9feb77469daa2069f1237d
+luci-i18n-opkg-zh-cn	git-22.283.16672-4b50d79-8	all	luci-i18n-opkg-zh-cn_git-22.283.16672-4b50d79-8_all.ipk	6fdd8a55b5268669fbcc13086acb17d0bac42eceb6367703f912aff8cdac95ed
+luci-i18n-upnp-zh-cn	git-22.283.16672-4b50d79-8	all	luci-i18n-upnp-zh-cn_git-22.283.16672-4b50d79-8_all.ipk	724f7d7f97a098c8e358da0f1209c96a2262cf6a1115d6b5b9eed43960e39a94
+luci-lib-ip	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	luci-lib-ip_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk	3b2ae01d3bab8d551e4bad8d4e27c70d7020013f648fe283fd5698d941be117d
+luci-lib-jsonc	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	luci-lib-jsonc_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk	a2ed9bcd8afa09320c9c34fa33e901601fad5a58066ac0839bf386ebb6e86011
+luci-lib-nixio	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	luci-lib-nixio_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk	ac72d3f2046a83394f4e06450aab80b203d92957c1a3ba85b919fef65a21604c
+luci-mod-admin-full	git-22.283.16672-4b50d79-8	all	luci-mod-admin-full_git-22.283.16672-4b50d79-8_all.ipk	6ce237ce227d85f17e4d26a720fcce4a400138b1f547c085b479143d4f652fb8
+luci-mod-network	git-22.283.16672-4b50d79-9	all	luci-mod-network_git-22.283.16672-4b50d79-9_all.ipk	324caa1326c5732280dc741c78de005585eeac99dba5b2511704c67e8dfbc2bb
+luci-mod-status	git-22.283.16672-4b50d79-8	aarch64_cortex-a73_neon-vfpv4	luci-mod-status_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk	f8a77774d4eca20e4cf3555d430fb8600254f517167ac9c904f2984dffdba099
+luci-mod-system	git-22.283.16672-4b50d79-8	all	luci-mod-system_git-22.283.16672-4b50d79-8_all.ipk	afcb3fbd57e7a401c32dfbd4b328cab9142475361fe5b0a29499238b3c020b36
+luci-proto-ipv6	git-22.283.16672-4b50d79-8	all	luci-proto-ipv6_git-22.283.16672-4b50d79-8_all.ipk	3fdf86acdf5e89098d0a2a8259bb8f06b298a080c3d1e29563788bcc7827be3d
+luci-proto-ppp	git-22.283.16672-4b50d79-8	all	luci-proto-ppp_git-22.283.16672-4b50d79-8_all.ipk	cccf682be5834fb2a8c1fbf1fa5f69e625001d67bef1636af791c1a38ae1938f
+luci-theme-bootstrap	git-22.283.16672-4b50d79-8	all	luci-theme-bootstrap_git-22.283.16672-4b50d79-8_all.ipk	f7f792b1bcc09cf92e3ec3bf8fd4ec46d652f557603ea72516708c9e79553340
+rpcd-mod-luci	20201107-2	aarch64_cortex-a73_neon-vfpv4	rpcd-mod-luci_20201107-2_aarch64_cortex-a73_neon-vfpv4.ipk	f20af02321709be5f467e559611d4cbda794aea9d79be0471ac834b8a0113a41

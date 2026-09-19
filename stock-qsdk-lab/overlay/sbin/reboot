@@ -1,0 +1,10 @@
+#!/bin/sh
+# The factory multi-call shutdown applets perform retired vendor accounting.
+# Never enter them from the replacement management plane.
+
+if /bin/ubus call system reboot '{}' >/dev/null 2>&1; then
+	exit 0
+fi
+
+echo 'reboot request failed: procd system service is unavailable' >&2
+exit 1

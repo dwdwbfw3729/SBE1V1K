@@ -1,0 +1,26 @@
+From: SBE core-userland compatibility build
+Subject: iwinfo: retain the factory unversioned runtime dependency
+
+The factory libiwinfo payload was stripped with sstrip and has no section
+symbol table, so GNU ld cannot use it to satisfy references during the
+candidate link.  With the QSDK-wide --as-needed flag, a plain -liwinfo is
+therefore discarded even though the module retains unresolved iwinfo calls.
+Keep the dependency explicit around this one library only.  This produces the
+factory runtime ABI name DT_NEEDED(libiwinfo.so) without copying or replacing
+the factory library.
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -59,7 +59,11 @@ IF(RPCSYS_SUPPORT)
+ ENDIF()
+ 
+ IF(IWINFO_SUPPORT)
+-  FIND_LIBRARY(iwinfo NAMES iwinfo)
++  IF(SBE_FACTORY_IWINFO_ABI)
++    SET(iwinfo -Wl,--no-as-needed iwinfo -Wl,--as-needed)
++  ELSE()
++    FIND_LIBRARY(iwinfo NAMES iwinfo)
++  ENDIF()
+   SET(PLUGINS ${PLUGINS} iwinfo_plugin)
+   ADD_LIBRARY(iwinfo_plugin MODULE iwinfo.c)
+   TARGET_LINK_LIBRARIES(iwinfo_plugin ${ubox} ${ubus} ${iwinfo})

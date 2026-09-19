@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+# Keep the factory QSDK opkg binary intact while exposing its normal command
+# surface. Compatibility decisions belong to opkg's architecture, dependency
+# and package-script handling.
+real_opkg=/usr/libexec/sbe-opkg-real
+
+[ -x "$real_opkg" ] || {
+	echo "opkg: 原厂 opkg 不存在" >&2
+	exit 1
+}
+
+exec "$real_opkg" "$@"

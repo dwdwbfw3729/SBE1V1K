@@ -1,0 +1,6 @@
+{
+  "dnsmasq": {
+    "path": "cache/candidates/dnsmasq-2.93-bd5566f8.ipk",
+    "sha256": "bd5566f85e107c38aac012012b72af0a48dad8d4216bc229970e956567ea9410"
+  }
+}

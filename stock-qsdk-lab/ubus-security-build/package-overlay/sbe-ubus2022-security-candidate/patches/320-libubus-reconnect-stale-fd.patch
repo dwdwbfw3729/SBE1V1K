@@ -1,0 +1,51 @@
+From 747013f6ea05a168d000531553f8de90f8b87b7f Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Sun, 3 May 2026 23:02:05 +0200
+Subject: [PATCH] libubus-io: reset sock.fd to -1 after close on ubus_reconnect
+ error path
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If ubus_reconnect() fails after the new socket has been opened (HELLO
+read failure, header validation, OOM, body read failure, ID validation),
+the out_close: handler closes ctx->sock.fd but leaves the field pointing
+at the now-closed descriptor.
+
+A subsequent ubus_shutdown() / ubus_free() then calls close() on that
+stale value, and a second reconnect attempt will pass the entry guard at
+the top of ubus_reconnect() and close it again. In both cases the kernel
+may have recycled the slot for an unrelated descriptor in the meantime,
+causing us to close someone else's fd — the same class of bug fixed in
+ubus_shutdown() previously.
+
+Set ctx->sock.fd = -1 alongside the close so the field is a faithful
+indicator of socket ownership.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ libubus-io.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libubus-io.c b/libubus-io.c
+index 262870e..4d5f2e1 100644
+--- a/libubus-io.c
++++ b/libubus-io.c
+@@ -464,8 +464,10 @@ int ubus_reconnect(struct ubus_context *ctx, const char *path)
+ out_free:
+ 	free(buf);
+ out_close:
+-	if (ret)
++	if (ret) {
+ 		close(ctx->sock.fd);
++		ctx->sock.fd = -1;
++	}
+ 
+ 	return ret;
+ }
+-- 
+2.54.0 (Apple Git-157)
+
+

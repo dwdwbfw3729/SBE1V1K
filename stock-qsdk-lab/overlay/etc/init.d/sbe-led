@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=97
+USE_PROCD=1
+
+start_service() {
+	/usr/sbin/sbe-led ready
+}
+
+reload_service() {
+	/usr/sbin/sbe-led ready
+}
+
+stop_service() {
+	return 0
+}
+
+service_triggers() {
+	procd_add_reload_trigger sbe-hardware
+}

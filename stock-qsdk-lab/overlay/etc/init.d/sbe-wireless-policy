@@ -1,0 +1,185 @@
+#!/bin/sh /etc/rc.common
+
+START=97
+
+EXTRA_COMMANDS="apply"
+EXTRA_HELP="\tapply\tApply missing SBE1V1K wireless defaults"
+policy_changed=0
+next_wifinet_id=0
+
+set_wireless_option() {
+	local section="$1"
+	local option="$2"
+	local wanted="$3"
+	local current
+
+	current=$(uci -q get "wireless.$section.$option" 2>/dev/null || true)
+	[ "$current" = "$wanted" ] && return 0
+	uci set "wireless.$section.$option=$wanted"
+	policy_changed=1
+}
+
+unset_wireless_option() {
+	local section="$1"
+	local option="$2"
+
+	uci -q get "wireless.$section.$option" >/dev/null 2>&1 || return 0
+	uci -q delete "wireless.$section.$option"
+	policy_changed=1
+}
+
+name_anonymous_iface() {
+	local section="$1"
+	local target
+
+	# LuCI refuses to render its normal wireless overview while anonymous
+	# wifi-iface sections remain.  Perform the same bounded UCI rename as its
+	# one-time migration dialog so a freshly generated QSDK configuration is
+	# ready before the first web login.  Existing named sections are untouched.
+	case "$section" in
+		cfg*) ;;
+		*) return 0 ;;
+	esac
+
+	while uci -q get "wireless.wifinet$next_wifinet_id" >/dev/null 2>&1; do
+		next_wifinet_id=$((next_wifinet_id + 1))
+	done
+	target="wifinet$next_wifinet_id"
+	if uci rename "wireless.$section=$target"; then
+		policy_changed=1
+		next_wifinet_id=$((next_wifinet_id + 1))
+	else
+		logger -t sbe-wireless-policy \
+			"failed to name anonymous wireless interface $section" \
+			2>/dev/null || true
+	fi
+}
+
+apply_radio_policy() {
+	local section="$1"
+	local value
+	config_get value "$section" country
+	[ -n "$value" ] || {
+		# Preserve the factory image's default regulatory selection.  Both the
+		# QCA attach path and 99-regdomain use US / CountryID 840.
+		uci set "wireless.$section.country=US"
+		policy_changed=1
+	}
+
+	# QSDK's detector knows the radio capabilities but omits band and width.
+	# Seed the SBE1V1K's factory mapping only when the setting is still absent;
+	# later user choices in the persistent UCI file are never overwritten.
+	case "$section" in
+		wifi0)
+			config_get value "$section" htmode
+			[ -n "$value" ] || {
+				uci set wireless.wifi0.htmode=HT20
+				policy_changed=1
+			}
+		;;
+		wifi1)
+			config_get value "$section" band
+			[ -n "$value" ] || {
+				uci set wireless.wifi1.band=3
+				policy_changed=1
+			}
+			config_get value "$section" htmode
+			[ -n "$value" ] || {
+				uci set wireless.wifi1.htmode=HT320
+				policy_changed=1
+			}
+		;;
+		wifi2)
+			config_get value "$section" band
+			[ -n "$value" ] || {
+				uci set wireless.wifi2.band=0
+				policy_changed=1
+			}
+			config_get value "$section" htmode
+			[ -n "$value" ] || {
+				uci set wireless.wifi2.htmode=HT80
+				policy_changed=1
+			}
+		;;
+	esac
+}
+
+apply_iface_policy() {
+	local section="$1"
+	local device ssid default_ssid key
+
+	config_get device "$section" device
+	config_get ssid "$section" ssid
+	case "$device" in
+		wifi0) default_ssid='SBE1V1K-2.4G' ;;
+		wifi1) default_ssid='SBE1V1K-6G' ;;
+		wifi2) default_ssid='SBE1V1K-5G' ;;
+		*) default_ssid= ;;
+	esac
+	if [ -n "$default_ssid" ] && { [ -z "$ssid" ] || [ "$ssid" = OpenWrt ]; }; then
+		uci set "wireless.$section.ssid=$default_ssid"
+		policy_changed=1
+	fi
+
+	# QSDK rejects legacy/open security on 6 GHz.  Normalize every 6 GHz AP to
+	# one of the two standards-compliant modes that the factory hostapd accepts:
+	# WPA3-SAE when a passphrase exists, otherwise Enhanced Open (OWE).  The
+	# QCA SAE path additionally requires sae_pwe=1; without it hostapd reports
+	# "Error in 6GHz security configured" and the AP never enters RUNNING.
+	if [ "$device" = wifi1 ]; then
+		config_get key "$section" key
+		set_wireless_option "$section" encryption ccmp
+		set_wireless_option "$section" ieee80211w 2
+		if [ -n "$key" ]; then
+			set_wireless_option "$section" sae 1
+			set_wireless_option "$section" sae_pwe 1
+			unset_wireless_option "$section" owe
+			unset_wireless_option "$section" owe_group
+			unset_wireless_option "$section" owe_groups
+			unset_wireless_option "$section" owe_transition_bssid
+			unset_wireless_option "$section" owe_transition_ssid
+			unset_wireless_option "$section" owe_transition_ifname
+		else
+			set_wireless_option "$section" owe 1
+			unset_wireless_option "$section" sae
+			unset_wireless_option "$section" sae_pwe
+			unset_wireless_option "$section" sae_password
+			unset_wireless_option "$section" sae_groups
+			unset_wireless_option "$section" key
+		fi
+	fi
+}
+
+apply() {
+	policy_changed=0
+	next_wifinet_id=0
+	config_load wireless
+	config_foreach apply_radio_policy wifi-device
+	config_foreach apply_iface_policy wifi-iface
+	config_foreach name_anonymous_iface wifi-iface
+	[ "$policy_changed" -eq 0 ] || uci commit wireless
+	chmod 600 /etc/config/wireless 2>/dev/null || true
+}
+
+boot() {
+	apply
+	if ! /usr/sbin/sbe-mbssid-policy normalize >/dev/null 2>&1; then
+		logger -t sbe-mbssid-policy \
+			'boot normalization failed; continuing wireless startup' \
+			2>/dev/null || true
+	fi
+	if [ "$policy_changed" -eq 1 ]; then
+		logger -t sbe-wireless-policy \
+			'applied missing defaults; reloading wireless state' \
+			2>/dev/null || true
+		/sbin/wifi reload >/dev/null 2>&1 || {
+			logger -t sbe-wireless-policy \
+				'wireless reload failed after applying defaults' \
+				2>/dev/null || true
+		}
+	fi
+}
+
+start() {
+	boot
+}

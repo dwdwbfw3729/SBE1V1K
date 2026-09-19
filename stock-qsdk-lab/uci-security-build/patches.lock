@@ -1,0 +1,4 @@
+359fe39d66283034efe6e2dcd91ceefe410d56aa1e9f0284dbf0a4bddfa03a58  package-overlay/Makefile
+57632e3431c293e5d4a3e19b632df77c5c4e69b34f8a92854f2aa8e9e4b5e22f  package-overlay/patches/100-parser-memory-safety-backports.patch
+6ca58e3bdf0ce5726f1245b4380163df714289297ac7af5077f075c38e2b6b0b  package-overlay/patches/110-mutation-memory-safety-backports.patch
+e4372edf83bb95ebbd1183869e231fe421a4a63ac33305ac7282748bdc9dd9d8  package-overlay/patches/120-parser-namespace-and-merge-backports.patch

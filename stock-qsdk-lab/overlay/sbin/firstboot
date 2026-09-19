@@ -1,0 +1,16 @@
+#!/bin/sh
+# Compatibility entry point used by the safe LuCI reset button.
+
+set -eu
+
+if [ "$#" -ne 2 ] || [ "$1" != -r ] || [ "$2" != -y ]; then
+	echo "firstboot: only 'firstboot -r -y' is supported on SBE1V1K" >&2
+	exit 1
+fi
+
+[ -x /usr/sbin/sbe-overlay-reset ] || {
+	echo "firstboot: audited p30 reset helper is unavailable" >&2
+	exit 1
+}
+
+exec /usr/sbin/sbe-overlay-reset

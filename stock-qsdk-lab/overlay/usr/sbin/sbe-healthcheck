@@ -1,0 +1,368 @@
+#!/bin/sh
+
+failures=0
+warnings=0
+
+pass() { printf 'PASS  %s\n' "$*"; }
+fail() { printf 'FAIL  %s\n' "$*"; failures=$((failures + 1)); }
+warn() { printf 'WARN  %s\n' "$*"; warnings=$((warnings + 1)); }
+
+check_process() {
+	pidof "$1" >/dev/null 2>&1 && pass "$1 is running" || fail "$1 is not running"
+}
+
+check_module() {
+	[ -d "/sys/module/$1" ] && pass "$1 is loaded" || fail "$1 is not loaded"
+}
+
+check_luci_https() {
+	local probe_dir headers body status result
+
+	[ -x "$luci_curl" ] || return 1
+	probe_dir=$(mktemp -d /tmp/sbe-healthcheck-luci.XXXXXX) || return 1
+	chmod 0700 "$probe_dir" || {
+		rmdir "$probe_dir" 2>/dev/null
+		return 1
+	}
+	headers=$probe_dir/headers
+	body=$probe_dir/body
+	if ! status=$(
+		ulimit -f 512 || exit 1
+		"$luci_curl" \
+		--disable \
+		--silent \
+		--insecure \
+		--noproxy '*' \
+		--proto '=https' \
+		--connect-timeout 3 \
+		--max-time 8 \
+		--max-filesize 262144 \
+		--dump-header "$headers" \
+		--output "$body" \
+		--write-out '%{http_code}' \
+		https://127.0.0.1/cgi-bin/luci/ 2>/dev/null
+	); then
+		status=
+	fi
+
+	result=1
+	case "$status" in
+		2[0-9][0-9])
+			if grep -F -q ' - LuCI</title>' "$body" &&
+				grep -F -q '/luci-static/' "$body"; then
+				result=0
+			fi
+		;;
+		403)
+			# The hardened LuCI dispatcher deliberately makes an anonymous
+			# login challenge non-successful.  Accept only its explicit
+			# challenge header together with the actual LuCI login form.
+			if grep -i -E -q '^X-LuCI-Login-Required:[[:space:]]*yes[[:space:]]*$' "$headers" &&
+				grep -F -q ' - LuCI</title>' "$body" &&
+				grep -F -q '/luci-static/' "$body" &&
+				grep -F -q 'name="luci_username"' "$body" &&
+				grep -F -q 'name="luci_password"' "$body"; then
+				result=0
+			fi
+		;;
+	esac
+
+	rm -f "$headers" "$body"
+	rmdir "$probe_dir" 2>/dev/null || result=1
+	return "$result"
+}
+
+for process in netifd rpcd uhttpd dropbear dnsmasq odhcpd crond thermald askey_pwm; do
+	check_process "$process"
+done
+if [ -x /sbin/logd ]; then
+	check_process logd
+else
+	check_process syslogd
+fi
+if [ "$(uci -q get system.ntp.enabled)" = 1 ]; then
+	check_process ntpd
+fi
+pgrep -f '[/]usr/sbin/sbe-thermal-policy' >/dev/null 2>&1 && \
+	pass 'sbe-thermal-policy is running' || fail 'sbe-thermal-policy is not running'
+
+ram_trial=0
+grep -qw sbe_ram_trial=1 /proc/cmdline && ram_trial=1
+persistent_requested=0
+grep -qw sbe_persistent=1 /proc/cmdline && persistent_requested=1
+grep -qw root=/dev/mmcblk0p27 /proc/cmdline && persistent_requested=1
+overlay_mode=$(cat /tmp/sbe-overlay-mode 2>/dev/null || echo unknown)
+if [ "$ram_trial" = 1 ]; then
+	pass 'running the TFTP RAM-only stock-QSDK trial'
+	[ "$overlay_mode" = ram-trial ] && pass 'RAM-only overlay mode is active' || \
+		fail "RAM trial has unexpected overlay mode: $overlay_mode"
+else
+	[ "$persistent_requested" = 1 ] && pass 'persistent installed mode was selected' || \
+		warn 'persistent installed mode is absent; this is a volatile recovery boot'
+	case "$overlay_mode" in
+		persistent) pass 'p30 persistent root overlay is active' ;;
+		persistent-degraded) fail 'persistent root is active but the p30 state mount is degraded' ;;
+		ram-fallback) fail 'installed boot fell back to volatile RAM overlay' ;;
+		*) fail "installed boot has unknown overlay mode: $overlay_mode" ;;
+	esac
+fi
+
+rw_emmc=$(awk '$1 ~ /^\/dev\/mmcblk/ && $4 ~ /(^|,)rw(,|$)/ { print $1 " on " $2 }' /proc/mounts)
+if [ "$ram_trial" = 1 ]; then
+	[ -z "$rw_emmc" ] && pass 'no eMMC partition is mounted read-write' || \
+		fail "RAM trial has writable eMMC mounts: $rw_emmc"
+else
+	unexpected_rw=$(printf '%s\n' "$rw_emmc" | awk 'NF && $0 !~ / on \/data$/ && $0 !~ / on \/overlay$/')
+	[ -z "$unexpected_rw" ] && pass 'only replacement configuration storage may write eMMC' || \
+		fail "unexpected writable eMMC mounts: $unexpected_rw"
+	if [ "$overlay_mode" = persistent ]; then
+		grep -q '^/dev/mmcblk0p30 /overlay ext4 ' /proc/mounts && \
+			pass 'persistent state is mounted from rootfs_data_1 (p30)' || \
+			fail 'persistent state is not mounted from p30 at /overlay'
+		/usr/sbin/sbe-p30-audit --mounted >/dev/null 2>&1 && \
+			pass 'p30 identity and geometry audit passed' || \
+			fail 'p30 identity or geometry audit failed'
+	fi
+fi
+
+factory_mounts=$(awk '$2 ~ /^\/(usr\/askey\/(log|persist)|usr\/app|usr\/(backup\/)?tls|usr\/bypass-cert|opt\/data)$/ { print $2 }' /proc/mounts)
+[ -z "$factory_mounts" ] && pass 'factory/operator data partitions are not mounted' || \
+	fail "factory/operator partitions are exposed at: $factory_mounts"
+
+if [ -r /proc/boot_info/bootconfig0/age ] && [ -r /proc/boot_info/bootconfig1/age ]; then
+	pass "bootconfig ages are $(cat /proc/boot_info/bootconfig0/age)/$(cat /proc/boot_info/bootconfig1/age)"
+else
+	warn 'bootconfig age interface is unavailable'
+fi
+
+ip link show br-lan >/dev/null 2>&1 && pass 'br-lan exists' || fail 'br-lan is missing'
+lan_addresses=$(ip -4 -o address show dev br-lan scope global 2>/dev/null | awk '{print $4}')
+[ -n "$lan_addresses" ] && pass "LAN IPv4 address: $lan_addresses" || fail 'br-lan has no IPv4 address'
+
+fw3 -q print >/dev/null 2>&1 && pass 'fw3 accepts the UCI firewall' || fail 'fw3 configuration failed'
+luci_curl=/usr/bin/curl-sbe
+[ -x "$luci_curl" ] || luci_curl=/usr/bin/curl
+check_luci_https && \
+	pass 'LuCI HTTPS is available locally' || fail 'LuCI HTTPS is unavailable locally'
+
+operator_processes='bm cm dm fcm fm fsm nm nfm om pm pwm qm sm sshm um vm wm wano wpd ovsdb-server ovs-vswitchd cujo sstorage socat'
+operator_running=
+for process in $operator_processes; do
+	pidof "$process" >/dev/null 2>&1 && operator_running="${operator_running}${operator_running:+ }$process"
+done
+[ -z "$operator_running" ] && pass 'operator-control processes are stopped' || \
+	fail "operator-control processes are still running: $operator_running"
+
+[ ! -d /sys/module/ecm_ovs ] && pass 'ECM OVS frontend is absent' || fail 'ecm_ovs is loaded'
+ovs_policy=$(cat /sys/module/qca_nss_ppe_bridge_mgr/parameters/ovs_enabled 2>/dev/null || true)
+case "$ovs_policy" in
+	N|0) pass "PPE OVS forwarding policy is disabled ($ovs_policy)" ;;
+	'') warn 'PPE bridge-manager OVS policy is unavailable' ;;
+	*) fail "PPE OVS forwarding policy is enabled ($ovs_policy)" ;;
+esac
+if ip link show ovs-system >/dev/null 2>&1 || [ -S /var/run/openvswitch/db.sock ]; then
+	fail 'an OVS datapath or database is active'
+else
+	pass 'no OVS datapath or database is active'
+fi
+[ -d /sys/module/openvswitch ] && [ -d /sys/module/qca_ovsmgr ] && \
+	pass 'OVS compatibility modules are present only as QCA acceleration dependencies' || \
+	warn 'QCA OVS dependency modules are not both loaded'
+
+for module in qca_nss_dp qca_nss_ppe ecm qca_ssdk; do
+	check_module "$module"
+done
+
+if [ -d /sys/kernel/debug/ecm/ecm_ppe_ipv4 ]; then
+	pass 'ECM PPE backend is present'
+elif [ -d /sys/kernel/debug/ecm/ecm_nss_ipv4 ]; then
+	pass 'ECM NSS backend is present'
+else
+	warn 'ECM backend debugfs directory was not found'
+fi
+
+enabled_radios=0
+detected_radios=0
+running_aps=0
+missing_radios=
+for radio in wifi0 wifi1 wifi2; do
+	case "$radio" in
+		wifi0) ap=ath0 ;;
+		wifi1) ap=ath1 ;;
+		wifi2) ap=ath2 ;;
+	esac
+	disabled=$(uci -q get "wireless.$radio.disabled" 2>/dev/null || true)
+	if [ "$disabled" = 1 ]; then
+		pass "$radio is disabled by local policy"
+		continue
+	fi
+	enabled_radios=$((enabled_radios + 1))
+	if [ -d "/sys/class/net/$radio" ]; then
+		detected_radios=$((detected_radios + 1))
+	else
+		missing_radios="${missing_radios}${missing_radios:+ }$radio"
+	fi
+
+	ap_expected=0
+	iface_index=0
+	while device=$(uci -q get "wireless.@wifi-iface[$iface_index].device" 2>/dev/null); do
+		iface_disabled=$(uci -q get "wireless.@wifi-iface[$iface_index].disabled" 2>/dev/null || true)
+		[ "$device" = "$radio" ] && [ "$iface_disabled" != 1 ] && ap_expected=1
+		iface_index=$((iface_index + 1))
+	done
+	if [ "$ap_expected" = 0 ]; then
+		pass "$radio has no enabled AP configuration"
+		continue
+	fi
+	if [ ! -d "/sys/class/net/$ap" ]; then
+		fail "$radio is configured but AP interface $ap is missing"
+		continue
+	fi
+	ap_carrier=$(cat "/sys/class/net/$ap/carrier" 2>/dev/null || echo 0)
+	ap_flags=$(cat "/sys/class/net/$ap/flags" 2>/dev/null || echo 0)
+	case "$ap_flags" in ''|*[!0-9a-fA-FxX]*) ap_flags=0 ;; esac
+	if [ "$ap_carrier" = 1 ] && [ $((ap_flags & 0x40)) -ne 0 ]; then
+		running_aps=$((running_aps + 1))
+		pass "$radio AP interface $ap is running"
+	else
+		fail "$radio is enabled but AP interface $ap is not running"
+	fi
+done
+[ -z "$missing_radios" ] && \
+	pass "$detected_radios/$enabled_radios enabled QCA radios detected" || \
+	fail "enabled QCA radio interfaces are missing: $missing_radios"
+
+expected_hostapd_sha256=1fc09adbd93a428b4991b5ea7fef3d37b1c9d3110cd67db26fc963d9e3bf7c8d
+hostapd_sha256=$(/usr/bin/sha256sum /usr/sbin/hostapd 2>/dev/null | awk '{print $1}')
+[ "$hostapd_sha256" = "$expected_hostapd_sha256" ] && \
+	pass 'factory QCA hostapd matches the audited SPF12.2CUS2 binary' || \
+	fail "QCA hostapd hash mismatch: ${hostapd_sha256:-unavailable}"
+
+thermal_state=/var/run/sbe-hardware/thermal.state
+led_state=/var/run/sbe-hardware/led.state
+if [ -r "$thermal_state" ]; then
+	thermal_fault=$(sed -n 's/^sensor_fault=//p' "$thermal_state")
+	[ "$thermal_fault" = 0 ] && pass 'local thermal policy reports healthy sensors' || \
+		fail "local thermal policy reports sensor_fault=${thermal_fault:-unknown}"
+	fan_fault=$(sed -n 's/^fan_fault=//p' "$thermal_state")
+	[ "$fan_fault" = 0 ] && pass 'local thermal policy reports a healthy fan' || \
+		fail "local thermal policy reports fan_fault=${fan_fault:-unknown}"
+	mask_fault=$(sed -n 's/^radio_mask_fault=//p' "$thermal_state")
+	[ "$mask_fault" = 0 ] && pass 'QCA radio chain masks match the thermal policy' || \
+		fail "local thermal policy reports radio_mask_fault=${mask_fault:-unknown}"
+	config_fault=$(sed -n 's/^config_fault=//p' "$thermal_state")
+	config_fault_reason=$(sed -n 's/^config_fault_reason=//p' "$thermal_state")
+	[ "$config_fault" = 0 ] && pass 'factory PWM policy table passed validation' || \
+		fail "local thermal policy reports config_fault=${config_fault:-unknown} (${config_fault_reason:-unknown})"
+	fan_rpm_stale=$(sed -n 's/^fan_rpm_stale=//p' "$thermal_state")
+	fan_rpm_age=$(sed -n 's/^fan_rpm_age_seconds=//p' "$thermal_state")
+	fan_rpm_max_age=$(sed -n 's/^fan_rpm_max_age_seconds=//p' "$thermal_state")
+	case "$fan_rpm_age:$fan_rpm_max_age" in
+		''|:*|*:|*:*:*|*[!0-9:]*)
+			fail 'fan RPM freshness metadata is invalid'
+			;;
+		*)
+			[ "$fan_rpm_stale" = 0 ] && [ "$fan_rpm_age" -le "$fan_rpm_max_age" ] && \
+				pass "fan RPM telemetry is fresh (${fan_rpm_age}s)" || \
+				fail "fan RPM telemetry is stale (${fan_rpm_age}s, limit ${fan_rpm_max_age}s)"
+			;;
+	esac
+	policy_interval=$(sed -n 's/^policy_interval=//p' "$thermal_state")
+	case "$policy_interval" in ''|*[!0-9]*) policy_interval=10 ;; esac
+	[ "$policy_interval" -ge 2 ] && [ "$policy_interval" -le 60 ] || policy_interval=10
+	thermal_max_age=$((policy_interval * 2 + 20))
+	thermal_mtime=$(stat -c %Y "$thermal_state" 2>/dev/null || echo 0)
+	thermal_now=$(date +%s)
+	case "$thermal_mtime:$thermal_now" in
+		''|:*|*:|*:*:*|*[!0-9:]*)
+			fail 'thermal status timestamp is invalid'
+			;;
+		*)
+			thermal_age=$((thermal_now - thermal_mtime))
+			[ "$thermal_age" -ge 0 ] && [ "$thermal_age" -le "$thermal_max_age" ] && \
+				pass "thermal status is fresh (${thermal_age}s)" || \
+				fail "thermal status is stale (${thermal_age}s, limit ${thermal_max_age}s)"
+			;;
+	esac
+else
+	fail 'local thermal policy has not published status'
+fi
+[ -r "$led_state" ] && pass 'local RGB LED manager has published status' || warn 'RGB LED status is unavailable'
+
+watchdog_state=/var/run/sbe-watchdog/state
+if [ "$(uci -q get sbe-services.watchdog.enabled)" != 1 ]; then
+	printf '%s\n' 'SKIP  optional local resource monitor is disabled'
+elif [ -r "$watchdog_state" ]; then
+	watchdog_health=$(sed -n 's/^health=//p' "$watchdog_state")
+	watchdog_warnings=$(sed -n 's/^warnings=//p' "$watchdog_state")
+	watchdog_mtime=$(stat -c %Y "$watchdog_state" 2>/dev/null || echo 0)
+	watchdog_now=$(date +%s)
+	case "$watchdog_mtime:$watchdog_now" in
+		''|:*|*:|*:*:*|*[!0-9:]*)
+			fail 'local health status timestamp is invalid'
+			;;
+		*)
+			watchdog_age=$((watchdog_now - watchdog_mtime))
+			[ "$watchdog_age" -ge 0 ] && [ "$watchdog_age" -le 150 ] && \
+				pass "local health status is fresh (${watchdog_age}s)" || \
+				fail "local health status is stale (${watchdog_age}s)"
+			;;
+	esac
+	[ "$watchdog_health" = ok ] && pass 'local resource watchdog reports healthy' || \
+		fail "local resource watchdog warning: ${watchdog_warnings:-unknown}"
+else
+	fail 'local resource watchdog has not published status'
+fi
+
+host_key_count=0
+for host_key in /etc/dropbear/dropbear_*_host_key; do
+	[ -f "$host_key" ] && [ -s "$host_key" ] || continue
+	host_key_count=$((host_key_count + 1))
+done
+[ "$host_key_count" -ge 1 ] && pass 'Dropbear has a generated host key' || fail 'Dropbear host key is missing'
+if [ -s /etc/uhttpd.key ] && [ -s /etc/uhttpd.crt ]; then
+	pass 'uhttpd has a generated TLS key'
+else
+	fail 'uhttpd TLS key or certificate is missing'
+fi
+
+if [ -c /dev/hwrng ]; then
+	pass 'hardware random-number generator is available'
+else
+	warn '/dev/hwrng is unavailable; kernel entropy is used'
+fi
+entropy=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo 0)
+case "$entropy" in ''|*[!0-9]*) entropy=0 ;; esac
+[ "$entropy" -ge 128 ] && pass "kernel entropy pool is healthy ($entropy)" || \
+	warn "kernel entropy pool is low ($entropy)"
+
+if ifstatus wan 2>/dev/null | grep -q '"up": true'; then
+	ip route show default | grep -q '^default ' && pass 'WAN has a default route' || fail 'WAN is up without a default route'
+	[ -s /tmp/resolv.conf.d/resolv.conf.auto ] && pass 'WAN supplied DNS resolvers' || warn 'WAN is up but resolver list is empty'
+	# A populated host file does not prove that the jailed daemon can see it.
+	# netifd replaces the file atomically; an old single-file bind remains stale.
+	for dns_pid in $(pidof dnsmasq); do
+		dns_config=$(tr '\000' '\n' < "/proc/$dns_pid/cmdline" 2>/dev/null |
+			awk 'previous == "-C" { print; exit } { previous=$0 }')
+		case "$dns_config" in /var/etc/dnsmasq.conf.*) ;; *) continue ;; esac
+		# Custom resolver files, no-resolv and unrelated instances are valid.
+		grep -qx 'resolv-file=/tmp/resolv.conf.d/resolv.conf.auto' "$dns_config" || continue
+		grep -qx 'no-resolv' "$dns_config" && continue
+		if [ -s /tmp/resolv.conf.d/resolv.conf.auto ]; then
+			# Repeat once in case netifd replaced the file during the comparison.
+			{ cmp -s /tmp/resolv.conf.d/resolv.conf.auto "/proc/$dns_pid/root/tmp/resolv.conf.d/resolv.conf.auto" ||
+				cmp -s /tmp/resolv.conf.d/resolv.conf.auto "/proc/$dns_pid/root/tmp/resolv.conf.d/resolv.conf.auto"; } &&
+				pass 'dnsmasq can see the current WAN resolver file' ||
+				fail 'dnsmasq resolver view differs from the current WAN resolver file'
+		fi
+	done
+else
+	warn 'WAN is not connected; Internet-dependent services were not tested'
+fi
+
+now=$(date +%s)
+[ "$now" -ge 1767225600 ] && pass 'system clock matches the 2026 firmware generation' || \
+	warn 'system clock predates this firmware and has not synchronized'
+
+printf '\nSummary: %s failure(s), %s warning(s)\n' "$failures" "$warnings"
+[ "$failures" -eq 0 ]

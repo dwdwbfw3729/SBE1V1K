@@ -1,0 +1,104 @@
+{
+  "format": 1,
+  "qsdk": {
+    "directory": "deps/qsdk-spf12.2-locked",
+    "lock": "qsdk-build/sources.lock"
+  },
+  "git": [
+    {
+      "path": "cgi-io-security-build/sources/cgi-io",
+      "url": "https://git.openwrt.org/project/cgi-io.git",
+      "commit": "31cb3c89f02d918d7f17bf62a80c852fc38a1ca1"
+    },
+    {
+      "path": "core-userland-build/sources/iwinfo",
+      "url": "https://git.openwrt.org/project/iwinfo.git",
+      "commit": "07315b6fdb2566a8626d8a1e4de76eb30456fe17"
+    },
+    {
+      "path": "core-userland-build/sources/odhcpd",
+      "url": "https://git.openwrt.org/project/odhcpd.git",
+      "commit": "68f382690bfaec56d5b1f31c3c31c48bcb642e3a"
+    },
+    {
+      "path": "core-userland-build/sources/ppp",
+      "url": "https://github.com/ppp-project/ppp.git",
+      "commit": "2587a678e61e94b6366f1a3be020644668a97000"
+    },
+    {
+      "path": "core-userland-build/sources/rpcd",
+      "url": "https://git.openwrt.org/project/rpcd.git",
+      "commit": "e37ed9d814699098eb7e26c8b33c054840782dfb"
+    },
+    {
+      "path": "core-userland-build/sources/uhttpd",
+      "url": "https://git.openwrt.org/project/uhttpd.git",
+      "commit": "373145f72c884c36a2b16f7f47e74ffae06bd754"
+    },
+    {
+      "path": "core-userland-build/sources/ustream-ssl",
+      "url": "https://git.openwrt.org/project/ustream-ssl.git",
+      "commit": "40b563b1ea89dabb2b6cd90644908134a0c8eff2"
+    },
+    {
+      "path": "diagnostics-modern-build/sources/htop",
+      "url": "https://github.com/htop-dev/htop.git",
+      "commit": "20882b8ef8271fb49ea0eb74bbfd484e9b0a11d8"
+    },
+    {
+      "path": "diagnostics-modern-build/sources/mtr",
+      "url": "https://github.com/traviscross/mtr.git",
+      "commit": "f392168771570b0fdc104c38dea6bbc2ce585710"
+    },
+    {
+      "path": "diagnostics-modern-build/sources/nano",
+      "url": "https://https.git.savannah.gnu.org/git/nano.git",
+      "commit": "8e6360d1663998c62ddd0cf934923d1f18004e3e"
+    },
+    {
+      "path": "firmware-tools/sources/fwtool",
+      "url": "https://github.com/openwrt/fwtool.git",
+      "commit": "04cd252e4e9394ffacd51f56f1f124abc534f715"
+    },
+    {
+      "path": "luci-proto-vxlan-candidate/upstream",
+      "url": "https://git.openwrt.org/project/luci.git",
+      "commit": "6dd22ec98da0b71f00caa5712456606adeff7811"
+    },
+    {
+      "path": "lucihttp-security-build/sources/lucihttp",
+      "url": "https://github.com/jow-/lucihttp.git",
+      "commit": "9b5b683fbb2bb0010aa031d620d0ab8105516757"
+    },
+    {
+      "path": "odhcp6c-build/sources/odhcp6c",
+      "url": "https://github.com/openwrt/odhcp6c.git",
+      "commit": "b6ae9ffaeb0e18e9fa3d5be62faa8d3c9f340a58"
+    },
+    {
+      "path": "passwall-native-deps-candidate/upstream-packages",
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git",
+      "commit": "b08887dfbd0db1710e54203ca700a697653f5b8d"
+    },
+    {
+      "path": "procd-board-build/sources/procd",
+      "url": "https://git.openwrt.org/project/procd.git",
+      "commit": "09b9bd828981a4f9271f8906f7b6f5af04e1a6f9"
+    },
+    {
+      "path": "rrdns-modern-build/sources/luci",
+      "url": "https://git.openwrt.org/project/luci.git",
+      "commit": "22e4e76524046e21bb57b7595dda658bd41313a4"
+    },
+    {
+      "path": "tools/vendor/vmlinux-to-elf",
+      "url": "https://github.com/marin-m/vmlinux-to-elf.git",
+      "commit": "19683fb95b29cd31362d49e6f48ab8368f96cbdf"
+    },
+    {
+      "path": "ubus-security-build/sources/ubus",
+      "url": "https://git.openwrt.org/project/ubus.git",
+      "commit": "24864e7840b3a02a9ef76284a373f6b2f00b8a9b"
+    }
+  ]
+}

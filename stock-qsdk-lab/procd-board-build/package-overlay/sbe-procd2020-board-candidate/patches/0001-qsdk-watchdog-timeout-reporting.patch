@@ -1,0 +1,37 @@
+From de6b4c946dbd08ef4e0fbfa77ab84fd2edb8ea70 Mon Sep 17 00:00:00 2001
+From: Sandhya KS <sandhyks@codeaurora.org>
+Date: Tue, 13 Oct 2020 12:39:04 +0530
+Subject: [PATCH] procd: Ensure watchdog timeout is set properly with ubus
+
+Signed-off-by: Sandhya KS <sandhyks@codeaurora.org>
+---
+ watchdog.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/watchdog.c b/watchdog.c
+index 9d770b4..704ce3e 100644
+--- a/watchdog.c
++++ b/watchdog.c
+@@ -125,14 +125,21 @@ bool watchdog_get_stopped(void)
+ 
+ int watchdog_timeout(int timeout)
+ {
++	static int ioctl_ret, current_wdt_drv_timeout;
+ 	if (timeout) {
+ 		DEBUG(4, "Set watchdog timeout: %ds\n", timeout);
++		current_wdt_drv_timeout = wdt_drv_timeout;
+ 		wdt_drv_timeout = timeout;
+ 
+ 		if (wdt_fd >= 0)
+-			watchdog_set_drv_timeout();
++			ioctl_ret = watchdog_set_drv_timeout();
+ 	}
+ 
++	// ioctl in watchdog_set_drv_timeout() returns 0 on success
++	// If ioctl fails, return the old timeout value
++	if (ioctl_ret)
++		wdt_drv_timeout = current_wdt_drv_timeout;
++
+ 	return wdt_drv_timeout;
+ }
+

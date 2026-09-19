@@ -1,0 +1,27 @@
+#!/bin/sh /etc/rc.common
+
+START=02
+STOP=99
+USE_PROCD=1
+
+start_service() {
+	local enabled
+	config_load sbe-services
+	config_get_bool enabled random_seed enabled 1
+	[ "$enabled" -eq 1 ] || return 0
+
+	procd_open_instance
+	procd_set_param command /usr/sbin/sbe-random-seed daemon
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+stop_service() {
+	/usr/sbin/sbe-random-seed save >/dev/null 2>&1 || true
+}
+
+service_triggers() {
+	procd_add_reload_trigger sbe-services
+}

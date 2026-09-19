@@ -1,0 +1,40 @@
+From: Felix Fietkau <nbd@nbd.name>
+Subject: [PATCH] ubusd: fix partial-write queue length accounting
+
+Legacy-baseline adaptation of upstream commits
+27839f854a58d9dbc85efa1b5cd79f253880c701 and
+8bb523ab20e06f686a07c5f82e8f8534d4228b9f.  A partial write stores a
+temporarily negative accumulator, and the complete queued wire length includes
+the ubus header.  Keeping the field unsigned and omitting the header could
+bypass or spuriously trip the per-client resource bound.
+
+--- a/ubusd.h
++++ b/ubusd.h
+@@ -52,6 +52,6 @@ struct ubus_client {
+ 	struct list_head tx_queue;
+ 	unsigned int txq_ofs;
+-	unsigned int txq_len;
++	ssize_t txq_len;
+ 
+ 	struct ubus_msg_buf *pending_msg;
+ 	struct ubus_msg_buf *retmsg;
+--- a/ubusd.c
++++ b/ubusd.c
+@@ -140,7 +140,7 @@ static void ubus_msg_enqueue(struct ubus_client *cl, struct ubus_msg_buf *ub)
+ {
+ 	struct ubus_msg_buf_list *ubl;
+ 
+-	if (cl->txq_len + ub->len > UBUS_CLIENT_MAX_TXQ_LEN)
++	if (cl->txq_len + sizeof(ub->hdr) + ub->len > UBUS_CLIENT_MAX_TXQ_LEN)
+ 		return;
+ 
+ 	ubl = calloc(1, sizeof(struct ubus_msg_buf_list));
+@@ -152,7 +152,7 @@ static void ubus_msg_enqueue(struct ubus_client *cl, struct ubus_msg_buf *ub)
+ 	ubl->msg = ubus_msg_ref(ub);
+ 
+ 	list_add_tail(&ubl->list, &cl->tx_queue);
+-	cl->txq_len += ub->len;
++	cl->txq_len += ub->len + sizeof(ub->hdr);
+ }
+ 
+ /* takes the msgbuf reference */

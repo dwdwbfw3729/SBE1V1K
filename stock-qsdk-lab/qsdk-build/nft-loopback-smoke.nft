@@ -1,0 +1,26 @@
+# Only apply inside the isolated sbe-kmods-* network namespace.
+table inet sbe_kernel_test {
+    set destinations4 {
+        type ipv4_addr
+        elements = { 127.0.0.1, 127.0.0.2 }
+    }
+    set destinations6 {
+        type ipv6_addr
+        elements = { ::1, ::2 }
+    }
+    chain inspect {
+        type filter hook prerouting priority -150; policy accept;
+        ip daddr @destinations4 fib daddr type local counter
+        ip6 daddr @destinations6 fib daddr type local counter
+        ip daddr @destinations4 jhash ip saddr mod 1 == 0 counter
+        ip6 daddr @destinations6 jhash ip6 saddr mod 1 == 0 counter
+    }
+    chain translate {
+        # Loopback-generated connections first traverse the output NAT hook.
+        type nat hook output priority -100; policy accept;
+        ip daddr @destinations4 tcp dport 45002 redirect to :45001
+        ip daddr @destinations4 udp dport 45002 redirect to :45001
+        ip6 daddr @destinations6 tcp dport 45002 redirect to :45001
+        ip6 daddr @destinations6 udp dport 45002 redirect to :45001
+    }
+}

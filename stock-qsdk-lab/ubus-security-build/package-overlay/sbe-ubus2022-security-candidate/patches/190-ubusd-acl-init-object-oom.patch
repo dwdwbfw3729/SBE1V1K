@@ -1,0 +1,32 @@
+From 497321a5ea90093fbf05d786a120afd3f8bdb6fb Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:08:04 +0200
+Subject: [PATCH] ubusd_acl: fix NULL dereference on OOM in ubusd_acl_init
+
+ubusd_create_object_internal() can return NULL if ubus_alloc_id()
+fails (e.g. when reading from /dev/urandom fails). The recv_msg
+assignment was performed unconditionally, causing a NULL dereference.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_acl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ubusd_acl.c b/ubusd_acl.c
+index e81643b..ec1aacb 100644
+--- a/ubusd_acl.c
++++ b/ubusd_acl.c
+@@ -686,5 +686,6 @@ void ubusd_acl_init(void)
+ {
+ 	ubus_init_string_tree(&ubusd_acls, true);
+ 	acl_obj = ubusd_create_object_internal(NULL, UBUS_SYSTEM_OBJECT_ACL);
+-	acl_obj->recv_msg = ubusd_acl_recv;
++	if (acl_obj)
++		acl_obj->recv_msg = ubusd_acl_recv;
+ }
+-- 
+2.54.0 (Apple Git-157)
+
+

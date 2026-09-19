@@ -1,0 +1,94 @@
+diff --git a/package/system/ubus/Makefile b/package/system/ubus/Makefile
+index f13c42a..9bb8e90 100644
+--- a/package/system/ubus/Makefile
++++ b/package/system/ubus/Makefile
+@@ -1,7 +1,7 @@
+ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=ubus
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ 
+ PKG_SOURCE_PROTO:=git
+ PKG_SOURCE_URL=$(PROJECT_GIT)/project/ubus.git
+diff --git a/package/system/ubus/patches/100-lua-validate-object-table.patch b/package/system/ubus/patches/100-lua-validate-object-table.patch
+new file mode 100644
+index 0000000..1b80ea0
+--- /dev/null
++++ b/package/system/ubus/patches/100-lua-validate-object-table.patch
+@@ -0,0 +1,27 @@
++From 3ab9d77595457f56ed1f26350ce15d308e50f09f Mon Sep 17 00:00:00 2001
++From: Hauke Mehrtens <hauke@hauke-m.de>
++Date: Mon, 13 Apr 2026 00:10:57 +0200
++Subject: lua: fix inverted argument check in ubus_lua_add
++
++Upstream: https://git.openwrt.org/project/ubus/commit/?id=3ab9d77595457f56ed1f26350ce15d308e50f09f
++
++The old check inspected the context userdata at argument 1 and therefore
++let a non-table argument 2 reach lua_next(), which crashes Lua.
++---
++ lua/ubus.c | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++--- a/lua/ubus.c
+++++ b/lua/ubus.c
++@@ -556,10 +556,10 @@ static int ubus_lua_add(lua_State *L)
++ {
++ 	struct ubus_lua_connection *c = luaL_checkudata(L, 1, METANAME);
++ 
++ 	/* verify top level object */
++-	if (lua_istable(L, 1)) {
+++	if (!lua_istable(L, 2)) {
++ 		lua_pushstring(L, "you need to pass a table");
++ 		return lua_error(L);
++ 	}
++ 
++ 	/* first table level: object names */
+diff --git a/package/system/ubus/patches/110-lua-check-method-allocation.patch b/package/system/ubus/patches/110-lua-check-method-allocation.patch
+new file mode 100644
+index 0000000..b4dc8bf
+--- /dev/null
++++ b/package/system/ubus/patches/110-lua-check-method-allocation.patch
+@@ -0,0 +1,42 @@
++From 43051ca73aec19c53d20e17e0e37a8ebd7d52d56 Mon Sep 17 00:00:00 2001
++From: Hauke Mehrtens <hauke@hauke-m.de>
++Date: Mon, 13 Apr 2026 00:11:26 +0200
++Subject: lua: fix unchecked calloc and memory leak in ubus_lua_load_object
++
++Upstream: https://git.openwrt.org/project/ubus/commit/?id=43051ca73aec19c53d20e17e0e37a8ebd7d52d56
++---
++ lua/ubus.c | 11 +++++++++--
++ 1 file changed, 9 insertions(+), 2 deletions(-)
++
++--- a/lua/ubus.c
+++++ b/lua/ubus.c
++@@ -488,7 +488,7 @@ static struct ubus_object* ubus_lua_loa
++ {
++ 	struct ubus_lua_object *obj = NULL;
++ 	int mlen = lua_gettablelen(L, -1);
++-	struct ubus_method *m;
+++	struct ubus_method *m = NULL;
++ 	int midx = 0;
++ 
++ 	/* setup object pointers */
++@@ -499,12 +499,19 @@ static struct ubus_object* ubus_lua_loa
++ 	obj->o.name = lua_tostring(L, -2);
++ 
++ 	/* setup method pointers */
++-	m = calloc(mlen, sizeof(struct ubus_method));
+++	if (mlen > 0) {
+++		m = calloc(mlen, sizeof(struct ubus_method));
+++		if (!m) {
+++			free(obj);
+++			return NULL;
+++		}
+++	}
++ 	obj->o.methods = m;
++ 
++ 	/* setup type pointers */
++ 	obj->o.type = calloc(1, sizeof(struct ubus_object_type));
++ 	if (!obj->o.type) {
+++		free(m);
++ 		free(obj);
++ 		return NULL;
++ 	}

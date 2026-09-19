@@ -1,0 +1,33 @@
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Subject: [PATCH] libubus: close unconsumed message descriptors on legacy ABI
+
+Legacy-baseline adaptation of upstream commit
+f29767f90af112040cdf8a1ee402e5d3d48115b3.  The b32a0e17 API predates
+channel contexts; all applicable descriptor ownership paths are retained.
+
+--- a/libubus.c
++++ b/libubus.c
+@@ -93,7 +93,7 @@ ubus_process_msg(struct ubus_context *ctx, struct ubus_msghdr_buf *buf, int fd)
+ 	case UBUS_MSG_STATUS:
+ 	case UBUS_MSG_DATA:
+ 		ubus_process_req_msg(ctx, buf, fd);
+-		break;
++		return;
+ 
+ 	case UBUS_MSG_INVOKE:
+ 	case UBUS_MSG_UNSUBSCRIBE:
+@@ -106,12 +106,15 @@ ubus_process_msg(struct ubus_context *ctx, struct ubus_msghdr_buf *buf, int fd)
+ 		ctx->stack_depth++;
+ 		ubus_process_obj_msg(ctx, buf, fd);
+ 		ctx->stack_depth--;
+-		break;
++		return;
+ 	case UBUS_MSG_MONITOR:
+ 		if (ctx->monitor_cb)
+ 			ctx->monitor_cb(ctx, buf->hdr.seq, buf->data);
+ 		break;
+ 	}
++
++	if (fd >= 0)
++		close(fd);
+ }

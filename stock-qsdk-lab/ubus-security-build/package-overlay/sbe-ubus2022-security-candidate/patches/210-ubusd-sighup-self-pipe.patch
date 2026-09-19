@@ -1,0 +1,87 @@
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Subject: [PATCH] ubusd_main: move SIGHUP ACL reload into the event loop
+
+Legacy-baseline adaptation of upstream commit
+11ea1b3bdbea5ec5bd27fefff661a5f1b970d384.  The signal handler previously
+called malloc/fopen/glob/syslog/AVL operations and could corrupt allocator
+state or deadlock.  It now performs only an async-signal-safe pipe write.
+
+--- a/ubusd_main.c
++++ b/ubusd_main.c
+@@ -4,11 +4,14 @@
+  * SPDX-License-Identifier: LGPL-2.1-only
+  */
+ 
++#define _GNU_SOURCE
++
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+ #ifdef FreeBSD
+ #include <sys/param.h>
+ #endif
++#include <fcntl.h>
+ #include <syslog.h>
+ 
+ #include <libubox/usock.h>
+@@ -197,11 +200,29 @@ static int usage(const char *progname)
+ 	return 1;
+ }
+ 
++static int sighup_pipe[2] = { -1, -1 };
++
+ static void sighup_handler(int sig)
+ {
++	int saved_errno = errno;
++	char c = 0;
++	ssize_t r = write(sighup_pipe[1], &c, sizeof(c));
++	(void)r;
++	errno = saved_errno;
++}
++
++static void sighup_fd_cb(struct uloop_fd *ufd, unsigned int events)
++{
++	char buf[16];
++	while (read(ufd->fd, buf, sizeof(buf)) > 0)
++		;
+ 	ubusd_acl_load();
+ }
+ 
++static struct uloop_fd sighup_ufd = {
++	.cb = sighup_fd_cb,
++};
++
+ int main(int argc, char **argv)
+ {
+ 	const char *ubus_socket = UBUS_UNIX_SOCKET;
+@@ -211,11 +232,31 @@ int main(int argc, char **argv)
+ 	int ch;
+ 
+ 	signal(SIGPIPE, SIG_IGN);
++
++#ifdef __linux__
++	ret = pipe2(sighup_pipe, O_NONBLOCK | O_CLOEXEC);
++#else
++	ret = pipe(sighup_pipe);
++	if (ret == 0) {
++		fcntl(sighup_pipe[0], F_SETFL, O_NONBLOCK);
++		fcntl(sighup_pipe[0], F_SETFD, FD_CLOEXEC);
++		fcntl(sighup_pipe[1], F_SETFL, O_NONBLOCK);
++		fcntl(sighup_pipe[1], F_SETFD, FD_CLOEXEC);
++	}
++#endif
++	if (ret == 0)
+ 	signal(SIGHUP, sighup_handler);
++	else
++		signal(SIGHUP, SIG_IGN);
+ 
+ 	openlog("ubusd", LOG_PID, LOG_DAEMON);
+ 	uloop_init();
+ 
++	if (sighup_pipe[0] >= 0) {
++		sighup_ufd.fd = sighup_pipe[0];
++		uloop_fd_add(&sighup_ufd, ULOOP_READ);
++	}
++
+ 	while ((ch = getopt(argc, argv, "A:s:")) != -1) {
+ 		switch (ch) {
+ 		case 's':

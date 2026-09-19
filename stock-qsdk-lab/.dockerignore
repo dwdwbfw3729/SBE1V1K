@@ -1,0 +1,8 @@
+# The builder image contains only the assembly entrypoint.  Rootfs inputs are
+# mounted explicitly at runtime; never send dumps, artifacts, source trees,
+# local keys or workstation metadata to the Docker build context/cache.
+**
+!docker/
+docker/**
+!docker/Dockerfile
+!docker/assemble-rootfs.sh

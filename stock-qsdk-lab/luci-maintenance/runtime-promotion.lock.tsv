@@ -1,0 +1,7 @@
+# package	version	architecture	filename	sha256
+liblua5.1.5	5.1.5-4	aarch64_cortex-a73_neon-vfpv4	liblua5.1.5_5.1.5-4_aarch64_cortex-a73_neon-vfpv4.ipk	48dd2ea237ddd7996a09b4faab2f2e5651ebe32af9e46f18a31c86388480bd40
+lua	5.1.5-4	aarch64_cortex-a73_neon-vfpv4	lua_5.1.5-4_aarch64_cortex-a73_neon-vfpv4.ipk	6e29dc1070979ab34838470b4838badd5ea401279375347fee7b15930afbd1df
+libubus-lua	2022-02-21-b32a0e17-2	aarch64_cortex-a73_neon-vfpv4	libubus-lua_2022-02-21-b32a0e17-2_aarch64_cortex-a73_neon-vfpv4.ipk	c6d173f5e33a87f4abc3f45028eb744d1659f92943d45033e51e4c748c471efb
+libuci-lua	2019-09-01-415f9e48-5	aarch64_cortex-a73_neon-vfpv4	libuci-lua_2019-09-01-415f9e48-5_aarch64_cortex-a73_neon-vfpv4.ipk	9c4d8faad1c55442a5323e428cd22bbe6308b7cbc969b3d18664518db9f94c21
+libiwinfo20181126	2019-10-16-07315b6f-3	aarch64_cortex-a73_neon-vfpv4	libiwinfo20181126_2019-10-16-07315b6f-3_aarch64_cortex-a73_neon-vfpv4.ipk	5918018efa75975d4033729b4a82f50b6019591f94c496901d00d61399506fa4
+libiwinfo-lua	2019-10-16-07315b6f-3	aarch64_cortex-a73_neon-vfpv4	libiwinfo-lua_2019-10-16-07315b6f-3_aarch64_cortex-a73_neon-vfpv4.ipk	ea4adaae860839e502cb2f95489e6ea6b2fc9f94c472a94130efa2a2b99a4e86

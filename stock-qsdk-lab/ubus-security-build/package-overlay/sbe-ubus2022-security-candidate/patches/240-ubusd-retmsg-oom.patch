@@ -1,0 +1,41 @@
+From 7ecacfadd9bca05fae69690207c11ab894489e3f Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 10:28:38 +0200
+Subject: [PATCH] ubusd_proto: fix NULL dereference on OOM in
+ ubusd_proto_init_retmsg
+
+blob_buf_init() can return -ENOMEM if the initial buffer allocation
+fails. The return value was ignored, leaving cl->b.head as NULL.
+The subsequent blob_raw_len(b->head) then dereferences that NULL
+pointer, causing a crash.
+
+Check the return value and propagate the error early. The caller's
+goto delete_no_retmsg path already calls blob_buf_free(&cl->b),
+which is safe because a failed blob_buf_init leaves cl->b.buf as
+NULL (free(NULL) is a no-op).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_proto.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ubusd_proto.c b/ubusd_proto.c
+index 8950d57..92fbd55 100644
+--- a/ubusd_proto.c
++++ b/ubusd_proto.c
+@@ -556,7 +556,8 @@ static int ubusd_proto_init_retmsg(struct ubus_client *cl)
+ {
+ 	struct blob_buf *b = &cl->b;
+ 
+-	blob_buf_init(&cl->b, 0);
++	if (blob_buf_init(&cl->b, 0))
++		return -1;
+ 	blob_put_int32(&cl->b, UBUS_ATTR_STATUS, 0);
+ 
+ 	/* we make the 'retmsg' buffer shared with the blob_buf b, to reduce mem duplication */
+-- 
+2.54.0 (Apple Git-157)
+
+

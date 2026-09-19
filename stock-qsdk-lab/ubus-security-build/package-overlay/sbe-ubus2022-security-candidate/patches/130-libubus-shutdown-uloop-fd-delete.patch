@@ -1,0 +1,28 @@
+From f787c97b34894a38b15599886cacbca01271684f Mon Sep 17 00:00:00 2001
+From: Felix Fietkau <nbd@nbd.name>
+Date: Mon, 5 Jun 2023 22:05:55 +0200
+Subject: [PATCH] libubus: add missing uloop_fd_delete call in ubus_shutdown
+
+Leaving the fd added could cause segfaults if ctx is freed
+
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
+---
+ libubus.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/libubus.c b/libubus.c
+index fc0d933..d625940 100644
+--- a/libubus.c
++++ b/libubus.c
+@@ -368,6 +368,7 @@ void ubus_shutdown(struct ubus_context *ctx)
+ 	blob_buf_free(&b);
+ 	if (!ctx)
+ 		return;
++	uloop_fd_delete(&ctx->sock);
+ 	close(ctx->sock.fd);
+ 	uloop_timeout_cancel(&ctx->pending_timer);
+ 	free(ctx->msgbuf.data);
+-- 
+2.54.0 (Apple Git-157)
+
+

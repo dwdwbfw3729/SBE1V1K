@@ -1,0 +1,6 @@
+# sha256	path relative to this directory
+20e8af695aa9c1654e4c4b51c0ead6594e51d14b158dc0eb930d04209631dc3c	runtime-patches/100-lua-security-backports.patch
+7af1b661cb82d58b3be7b564fd63b60a82ab667e51ceddcbb752de8ca94d9480	runtime-patches/110-ubus-lua-safety-backports.patch
+db7b00e8ef3ad58879d9360f2c8fb0caf44d892931462e5ab9d28eb75de7c022	runtime-patches/120-uci-lua-leak-backports.patch
+60d672bee4ffe6792198bf2eb499a3b5079c20781153d43f70fcf0a6e131b80c	runtime-patches/130-iwinfo-scan-entry-init.patch
+0b17a8d21c59d726b5fdc2f0243a9eaecce79fc3262a190d7f008301535800d2	runtime-patches/140-iwinfo-6ghz-channels.patch

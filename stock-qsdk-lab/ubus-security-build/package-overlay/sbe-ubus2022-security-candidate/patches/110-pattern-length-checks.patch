@@ -1,0 +1,79 @@
+From: Felix Fietkau <nbd@nbd.name>
+Subject: [PATCH] ubusd: reject other empty ACL and lookup patterns
+
+Backport of upstream commit aa4a7ee1d3417bc11207ad0a78d579ece7fe0c13.
+
+--- a/ubusd_acl.c
++++ b/ubusd_acl.c
+@@ -307,6 +307,9 @@ ubusd_acl_alloc_obj(struct ubusd_acl_file *file, const char *obj)
+ 	char *k;
+ 	bool partial = false;
+ 
++	if (!len)
++		return NULL;
++
+ 	if (obj[len - 1] == '*') {
+ 		partial = true;
+ 		len--;
+@@ -339,6 +342,8 @@ ubusd_acl_add_access(struct ubusd_acl_file *file, struct blob_attr *obj)
+ 		return;
+ 
+ 	o = ubusd_acl_alloc_obj(file, blobmsg_name(obj));
++	if (!o)
++		return;
+ 
+ 	o->methods = tb[ACL_ACCESS_METHODS];
+ 	o->tags = tb[ACL_ACCESS_TAGS];
+@@ -353,28 +358,40 @@ ubusd_acl_add_subscribe(struct ubusd_acl_file *file, const char *obj)
+ {
+ 	struct ubusd_acl_obj *o = ubusd_acl_alloc_obj(file, obj);
+ 
++	if (!o)
++		return;
++
+ 	o->subscribe = true;
+ }
+ 
+ static void
+ ubusd_acl_add_publish(struct ubusd_acl_file *file, const char *obj)
+ {
+ 	struct ubusd_acl_obj *o = ubusd_acl_alloc_obj(file, obj);
+ 
++	if (!o)
++		return;
++
+ 	o->publish = true;
+ }
+ 
+ static void ubusd_acl_add_listen(struct ubusd_acl_file *file, const char *obj)
+ {
+ 	struct ubusd_acl_obj *o = ubusd_acl_alloc_obj(file, obj);
+ 
++	if (!o)
++		return;
++
+ 	o->listen = true;
+ }
+ 
+ static void ubusd_acl_add_send(struct ubusd_acl_file *file, const char *obj)
+ {
+ 	struct ubusd_acl_obj *o = ubusd_acl_alloc_obj(file, obj);
+ 
++	if (!o)
++		return;
++
+ 	o->send = true;
+ }
+ 
+--- a/ubusd_proto.c
++++ b/ubusd_proto.c
+@@ -241,6 +241,9 @@ static int __ubusd_handle_lookup(struct ubus_client *cl,
+ 
+ 	objpath = blob_data(attr[UBUS_ATTR_OBJPATH]);
+ 	len = strlen(objpath);
++	if (!len)
++		return UBUS_STATUS_INVALID_ARGUMENT;
++
+ 	if (objpath[len - 1] != '*') {
+ 		obj = avl_find_element(&path, objpath, obj, path);
+ 		if (!obj)

@@ -1,0 +1,7 @@
+# path	soname-or-dash	machine	dynamic_defined_symbol_set_sha256
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/liblua.so	liblua.so.5.1.5	AArch64	7e4b73c61d8c7ed520ad637b5df44c5c289a5f53655e8828eb282dcabc5f1047
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/libjson-c.so	libjson-c.so.2	AArch64	288bb4cffebde071e4b0f871cf1b39c413c4de7bec8b5b6ae8f6f02b84ef2cb6
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/libnl-tiny.so	-	AArch64	01330c228f99628ac6f76013c25f94e685da9feec978b2181059675c6642febe
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/libubox.so	libubox.so	AArch64	19c829ea0d18baa41538a42818becbbaf35da14f4bcdb83944cf3037497be29e
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/libubus.so	libubus.so.20210603	AArch64	61c0bfdc490b2e8c03f2b9070f3988c1e0eacdb3d57d0983140a0fb0beb2598a
+staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/lib/libuci.so	libuci.so	AArch64	1df1937b1b59ba1447a00b9b86cd587c0a7c407944e691f659e4c2e51b6aeff5

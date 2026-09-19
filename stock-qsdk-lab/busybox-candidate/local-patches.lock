@@ -1,0 +1,2 @@
+# filename<TAB>sha256<TAB>provenance
+700-openwrt-date-k-compat.patch	ebf92dff74ebdeeb170efa3bf05f735bce9ceecfe2944b81e3db3e08ad41439b	OpenWrt 250-date-k-flag forward port; required by stock /etc/init.d/system

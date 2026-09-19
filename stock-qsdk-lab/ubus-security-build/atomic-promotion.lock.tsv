@@ -1,0 +1,6 @@
+# disposition	package	version	architecture	filename	sha256
+native-atomic	sbe-libubus20210603-security-candidate	2022.02.21+sec2026.05.23-1	aarch64_cortex-a73_neon-vfpv4	sbe-libubus20210603-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk	59dbb8ad7d8e4c1acce21c6814a98b5687b897e3c85b29ea4db6b39d314c5eb5
+native-atomic	sbe-ubus2022-security-candidate	2022.02.21+sec2026.05.23-1	aarch64_cortex-a73_neon-vfpv4	sbe-ubus2022-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk	96573acbc44c0e1fd760f85eb0ad4ef238c9a73f1c1ca55744c6fad2c59b8677
+native-atomic	sbe-ubusd2022-security-candidate	2022.02.21+sec2026.05.23-1	aarch64_cortex-a73_neon-vfpv4	sbe-ubusd2022-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk	106a0a38665fe339fc84d0668990bfd7cda20aa16acb1a235557620079b75d4e
+runtime-paired	libubus-lua	2022-02-21-b32a0e17-2	aarch64_cortex-a73_neon-vfpv4	libubus-lua_2022-02-21-b32a0e17-2_aarch64_cortex-a73_neon-vfpv4.ipk	c6d173f5e33a87f4abc3f45028eb744d1659f92943d45033e51e4c748c471efb
+comparison-only	sbe-libubus-lua2022-comparison-only	2022.02.21+sec2026.05.23-1	aarch64_cortex-a73_neon-vfpv4	sbe-libubus-lua2022-comparison-only_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk	514f0243711b9e5659140032b27d9715572cc6b09f0e275ed783ccd38ca6e383

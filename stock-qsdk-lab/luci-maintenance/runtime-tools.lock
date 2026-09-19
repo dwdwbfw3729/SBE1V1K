@@ -1,0 +1,14 @@
+# sha256	path relative to the locked QSDK root
+2a92c82a280d2d43308547eb37f1d72d0f70fcf241138113dee7c2a39ac37a46	staging_dir/host/bin/cmake
+30dfc734f9d9d702b65615b525c0476258b86b02386d22689fb4b5ebf0d2ece9	staging_dir/host/bin/pkg-config
+3cf22bf495f274283ec11acb407c4fd94467eb3710b4b82faf7314e963df6158	staging_dir/host/bin/patchelf
+430c235e23bff3392d199471f328674fe5e45bebe200b7a7ec1322a58ed3e198	staging_dir/host/bin/sed
+b97b16f11aadb378a36fe1290f469ff0170cb567b7751ca3cff2ff7f92ffd5f8	staging_dir/host/bin/sstrip
+de29d84833cea94dfb83a26c5e8fe500978e04ac73c1f821e41fdec51ff3e987	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-gcc
+b03bece752c31885675b660dfd2ed1175b61b12be4e6fe9fcdf7aaa4dbdb1076	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-ar
+57c2659306357243c9398c21ca389e1dd744b15c142653fb337cf4d476f49396	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-ranlib
+1932966bf382a6faf358149c4e6831d0627dbe1545f0c872b36f9e075413f2b3	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-ld
+173cfd182f61f48662865cb2cbd4e45b579a1b096d573bb0cc46f7da82d0efdb	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-nm
+69c2cc0dc7aea11fca3b46fb41e1bc5c41ef65b0f00afd9cd436d8d703fdfba2	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-readelf
+b4a3b618429d91e9fc13f78eaa4f57541875a9e33576f6cddf03f095614749f6	staging_dir/toolchain-aarch64_cortex-a73+neon-vfpv4_gcc-7.5.0_musl/bin/aarch64-openwrt-linux-musl-strip
+

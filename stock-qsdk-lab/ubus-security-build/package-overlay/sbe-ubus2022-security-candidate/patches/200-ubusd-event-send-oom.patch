@@ -1,0 +1,113 @@
+From f66d52ba983fc588f25d56c419a9101fe24a0e53 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:08:29 +0200
+Subject: [PATCH] ubusd_event: fix OOM handling in ubusd_send_event_msg
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+fill_cb() calls ubus_msg_new(), which can return NULL under memory
+pressure. The returned pointer was dereferenced unconditionally on the
+next line to set hdr.type and hdr.peer, causing a NULL dereference
+crash.
+
+ubusd_send_event_msg() also returned void, so catching that NULL still
+left the function returning silently while the caller in
+ubusd_send_event() kept iterating the pattern tree. Every remaining
+iteration called fill_cb() again (almost certainly hitting the same
+OOM) and ubusd_send_event() unconditionally returned 0 — the
+originating client received UBUS_STATUS_OK even though no subscriber
+had been delivered the event.
+
+Check the fill_cb() result for NULL, convert ubusd_send_event_msg() to
+return int and surface the OOM as UBUS_STATUS_NO_DATA (the status the
+rest of this file already uses for allocation failures, e.g.
+ubusd_alloc_event_pattern()). ubusd_send_event() now breaks out of the
+loop on the first error and propagates the status, which flows back
+through ubusd_forward_event() to the originating client so it knows the
+send did not complete.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_event.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/ubusd_event.c b/ubusd_event.c
+index 3036969..419c018 100644
+--- a/ubusd_event.c
++++ b/ubusd_event.c
+@@ -111,41 +111,45 @@ static int ubusd_alloc_event_pattern(struct ubus_client *cl, struct blob_attr *m
+ 	return 0;
+ }
+ 
+-static void ubusd_send_event_msg(struct ubus_msg_buf **ub, struct ubus_client *cl,
+-				 struct ubus_object *obj, const char *id,
+-				 event_fill_cb fill_cb, void *cb_priv)
++static int ubusd_send_event_msg(struct ubus_msg_buf **ub, struct ubus_client *cl,
++				struct ubus_object *obj, const char *id,
++				event_fill_cb fill_cb, void *cb_priv)
+ {
+ 	uint32_t *objid_ptr;
+ 
+ 	/* do not loop back events */
+ 	if (obj->client == cl)
+-	    return;
++	    return 0;
+ 
+ 	/* do not send duplicate events */
+ 	if (obj->event_seen == obj_event_seq)
+-		return;
++		return 0;
+ 
+ 	obj->event_seen = obj_event_seq;
+ 
+ 	if (!*ub) {
+ 		*ub = fill_cb(cb_priv, id);
++		if (!*ub)
++			return UBUS_STATUS_UNKNOWN_ERROR;
+ 		(*ub)->hdr.type = UBUS_MSG_INVOKE;
+ 		(*ub)->hdr.peer = 0;
+ 	}
+ 
+ 	objid_ptr = blob_data(blob_data((*ub)->data));
+ 	*objid_ptr = htonl(obj->id.id);
+ 
+ 	(*ub)->hdr.seq = ++event_seq;
+ 	ubus_msg_send(obj->client, *ub);
++	return 0;
+ }
+ 
+ int ubusd_send_event(struct ubus_client *cl, const char *id,
+ 		     event_fill_cb fill_cb, void *cb_priv)
+ {
+ 	struct ubus_msg_buf *ub = NULL;
+ 	struct event_source *ev;
+ 	int match_len = 0;
++	int ret = 0;
+ 
+ 	if (ubusd_acl_check(cl, id, NULL, UBUS_ACL_SEND))
+ 		return UBUS_STATUS_PERMISSION_DENIED;
+@@ -176,13 +180,15 @@ int ubusd_send_event(struct ubus_client *cl, const char *id,
+ 				continue;
+ 		}
+ 
+-		ubusd_send_event_msg(&ub, cl, ev->obj, id, fill_cb, cb_priv);
++		ret = ubusd_send_event_msg(&ub, cl, ev->obj, id, fill_cb, cb_priv);
++		if (ret)
++			break;
+ 	}
+ 
+ 	if (ub)
+ 		ubus_msg_free(ub);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ enum {
+-- 
+2.54.0 (Apple Git-157)
+
+

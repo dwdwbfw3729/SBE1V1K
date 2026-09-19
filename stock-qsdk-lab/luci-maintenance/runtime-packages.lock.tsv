@@ -1,0 +1,7 @@
+# build_target	config_symbol	package	version	architecture	control_source	source_name	baseline_filename	baseline_version
+package/utils/lua	liblua	liblua5.1.5	5.1.5-4	aarch64_cortex-a73_neon-vfpv4	package/utils/lua	liblua	liblua5.1.5_5.1.5-3_aarch64_generic.ipk	5.1.5-3
+package/utils/lua	lua	lua	5.1.5-4	aarch64_cortex-a73_neon-vfpv4	package/utils/lua	lua	lua_5.1.5-3_aarch64_generic.ipk	5.1.5-3
+package/system/ubus	libubus-lua	libubus-lua	2022-02-21-b32a0e17-2	aarch64_cortex-a73_neon-vfpv4	package/system/ubus	libubus-lua	libubus-lua_2022-02-21-b32a0e17-1_aarch64_generic.ipk	2022-02-21-b32a0e17-1
+package/system/uci	libuci-lua	libuci-lua	2019-09-01-415f9e48-5	aarch64_cortex-a73_neon-vfpv4	package/system/uci	libuci-lua	libuci-lua_2019-09-01-415f9e48-4_aarch64_generic.ipk	2019-09-01-415f9e48-4
+package/network/utils/iwinfo	libiwinfo	libiwinfo20181126	2019-10-16-07315b6f-3	aarch64_cortex-a73_neon-vfpv4	package/network/utils/iwinfo	libiwinfo	libiwinfo20181126_2019-10-16-07315b6f-1_aarch64_generic.ipk	2019-10-16-07315b6f-1
+package/network/utils/iwinfo	libiwinfo-lua	libiwinfo-lua	2019-10-16-07315b6f-3	aarch64_cortex-a73_neon-vfpv4	package/network/utils/iwinfo	libiwinfo-lua	libiwinfo-lua_2019-10-16-07315b6f-1_aarch64_generic.ipk	2019-10-16-07315b6f-1

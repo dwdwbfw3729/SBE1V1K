@@ -1,0 +1,45 @@
+{
+  "getrandom": {
+    "files": ["usr/bin/getrandom"],
+    "depends": "libc, libgcc1",
+    "elf_needed": {"usr/bin/getrandom": ["libc.so", "libgcc_s.so.1"]},
+    "description": "QSDK native kernel random-number reader"
+  },
+  "iw": {
+    "files": ["usr/sbin/iw"],
+    "depends": "libc, libgcc1, libnl-tiny",
+    "elf_needed": {"usr/sbin/iw": ["libc.so", "libgcc_s.so.1", "libnl-tiny.so"]},
+    "description": "QSDK native nl80211 diagnostic tool; QCA wireless remains managed by its vendor backend"
+  },
+  "libuclient20160123": {
+    "files": ["usr/lib/libuclient.so"],
+    "depends": "libc, libgcc1, libubox20191228",
+    "elf_needed": {"usr/lib/libuclient.so": ["libc.so", "libgcc_s.so.1", "libubox.so"]},
+    "description": "QSDK native HTTP client library (ABI 20160123)"
+  },
+  "uclient-fetch": {
+    "files": ["bin/uclient-fetch", "usr/bin/wget"],
+    "depends": "libc, libgcc1, libubox20191228, libuclient20160123, libustream-openssl20150806, ca-bundle",
+    "provides": "wget",
+    "elf_needed": {"bin/uclient-fetch": ["libc.so", "libgcc_s.so.1", "libubox.so", "libuclient.so"]},
+    "description": "QSDK native HTTP/HTTPS downloader with its TLS backend and CA certificates"
+  },
+  "usign": {
+    "files": ["usr/bin/usign", "usr/bin/signify"],
+    "depends": "libc, libgcc1, libubox20191228",
+    "elf_needed": {"usr/bin/usign": ["libc.so", "libgcc_s.so.1", "libubox.so"]},
+    "description": "QSDK native OpenWrt signature verification utility"
+  },
+  "fwtool": {
+    "files": ["usr/bin/fwtool"],
+    "depends": "libc, libgcc1",
+    "elf_needed": {"usr/bin/fwtool": ["libc.so", "libgcc_s.so.1"]},
+    "description": "QSDK native firmware metadata and signature utility"
+  },
+  "jshn": {
+    "files": ["usr/bin/jshn", "usr/share/libubox/jshn.sh"],
+    "depends": "libc, libgcc1, libubox20191228, libblobmsg-json, libjson-c2",
+    "elf_needed": {"usr/bin/jshn": ["libblobmsg_json.so", "libc.so", "libgcc_s.so.1", "libjson-c.so.2", "libubox.so"]},
+    "description": "QSDK native JSON shell helpers and executable"
+  }
+}

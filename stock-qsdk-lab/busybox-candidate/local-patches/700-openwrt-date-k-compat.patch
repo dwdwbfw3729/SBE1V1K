@@ -1,0 +1,99 @@
+From: OpenWrt BusyBox compatibility forward port
+Subject: date: retain the OpenWrt -k kernel-timezone interface
+
+The stock QSDK base-files /etc/init.d/system script invokes `date -k` after
+updating /tmp/TZ. This interface originated in OpenWrt's public
+250-date-k-flag.patch and is present in the SBE1V1K factory BusyBox 1.35.0.
+Forward-port only that local-system compatibility feature to BusyBox 1.37.0.
+
+This patch contains no OpenSync, cloud-management, reboot, or device-write
+logic.
+
+--- a/coreutils/date.c
++++ b/coreutils/date.c
+@@ -109,6 +109,7 @@
+ //usage:     "\n	-I[SPEC]	Output ISO-8601 date"
+ //usage:     "\n			SPEC=date (default), hours, minutes, seconds or ns"
+ //usage:	)
++//usage:     "\n	-k		Set Kernel timezone from localtime and exit"
+ //usage:     "\n"
+ //usage:     "\nRecognized TIME formats:"
+ //usage:     "\n	@seconds_since_1970"
+@@ -126,9 +127,8 @@
+ 
+ #include "libbb.h"
+ #include "common_bufsiz.h"
+-#if ENABLE_FEATURE_DATE_NANO
+-# include <sys/syscall.h>
+-#endif
++#include <sys/time.h>
++#include <sys/syscall.h>
+ 
+ enum {
+ 	OPT_RFC2822   = (1 << 0), /* R */
+@@ -136,8 +136,9 @@
+ 	OPT_UTC       = (1 << 2), /* u */
+ 	OPT_DATE      = (1 << 3), /* d */
+ 	OPT_REFERENCE = (1 << 4), /* r */
+-	OPT_ISO8601   = (1 << 5) * ENABLE_FEATURE_DATE_ISOFMT, /* I */
+-	OPT_STR2DT    = (1 << 6) * ENABLE_FEATURE_DATE_ISOFMT, /* D */
++	OPT_KERNELTZ  = (1 << 5), /* k */
++	OPT_ISO8601   = (1 << 6) * ENABLE_FEATURE_DATE_ISOFMT, /* I */
++	OPT_STR2DT    = (1 << 7) * ENABLE_FEATURE_DATE_ISOFMT, /* D */
+ };
+ 
+ #if ENABLE_LONG_OPTS
+@@ -149,6 +150,7 @@
+ 	/*	"universal\0" No_argument       "u" */
+ 		"date\0"      Required_argument "d"
+ 		"reference\0" Required_argument "r"
++		"set-kernel-tz\0" No_argument   "k"
+ 		;
+ #endif
+ 
+@@ -162,6 +164,8 @@
+ int date_main(int argc, char **argv) MAIN_EXTERNALLY_VISIBLE;
+ int date_main(int argc UNUSED_PARAM, char **argv)
+ {
++	time_t tt;
++	struct timezone tz;
+ 	struct timespec ts;
+ 	struct tm tm_time;
+ 	char buf_fmt_dt2str[64];
+@@ -174,7 +178,7 @@
+ 	char *isofmt_arg = NULL;
+ 
+ 	opt = getopt32long(argv, "^"
+-			"Rs:ud:r:"
++			"Rs:ud:r:k"
+ 			IF_FEATURE_DATE_ISOFMT("I::D:")
+ 			"\0"
+ 			"d--s:s--d"
+@@ -237,7 +241,27 @@
+ 	}
+ 	if (*argv)
+ 		bb_show_usage();
++
++	/* Preserve the OpenWrt/QSDK `date -k` ABI used by /etc/init.d/system. */
++	if (opt & OPT_KERNELTZ) {
++		tt = time(NULL);
++		localtime_r(&tt, &tm_time);
+ 
++		/* Work around warp_clock() on the first invocation. */
++		memset(&tz, 0, sizeof(tz));
++		syscall(SYS_settimeofday, NULL, &tz);
++
++		memset(&tz, 0, sizeof(tz));
++		tz.tz_minuteswest = -(tm_time.tm_gmtoff / 60);
++
++		if (syscall(SYS_settimeofday, NULL, &tz)) {
++			bb_simple_perror_msg("can't set kernel time zone");
++			return EXIT_FAILURE;
++		}
++
++		return EXIT_SUCCESS;
++	}
++
+ 	/* Now we have parsed all the information except the date format
+ 	 * which depends on whether the clock is being set or read */
+ 

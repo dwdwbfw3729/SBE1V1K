@@ -1,0 +1,8 @@
+# package	payload_path	role
+liblua5.1.5	/usr/lib/liblua.so.5.1.5	shared-library
+lua	/usr/bin/lua	executable
+libubus-lua	/usr/lib/lua/ubus.so	lua-module
+libuci-lua	/usr/lib/lua/uci.so	lua-module
+libiwinfo20181126	/usr/lib/libiwinfo.so	shared-library
+libiwinfo-lua	/usr/lib/lua/iwinfo.so	lua-module
+

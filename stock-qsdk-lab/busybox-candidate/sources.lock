@@ -1,0 +1,13 @@
+# BusyBox upstream release and the last OpenWrt 1.37.0 patch set before the
+# 1.38.0 version bump.  All inputs are content-hash locked.
+BUSYBOX_VERSION=1.37.0
+BUSYBOX_ARCHIVE=busybox-1.37.0.tar.bz2
+BUSYBOX_URL=https://busybox.net/downloads/busybox-1.37.0.tar.bz2
+BUSYBOX_SHA256=3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4
+
+OPENWRT_COMMIT=2f93ba1b5b7ddc66be6436b4436c46a334f05e5e
+OPENWRT_PATCH_BASE=https://raw.githubusercontent.com/openwrt/openwrt/2f93ba1b5b7ddc66be6436b4436c46a334f05e5e/package/utils/busybox/patches
+
+# Public origin of the sole local forward port. The ported content itself is
+# tracked and hash-locked by local-patches.lock.
+OPENWRT_DATE_K_ORIGIN_COMMIT=5e36196651a14dd0588c9952698d8d68cdd44f1a

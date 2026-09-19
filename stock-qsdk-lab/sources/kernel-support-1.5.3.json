@@ -1,0 +1,295 @@
+{
+  "config_sha256": "12c217f2c327d62d55d941b269c8da492c34019de89fdb30c0530af2b7a4743f",
+  "format": 1,
+  "kernel_release": "5.4.213",
+  "kernel_sha256": "2fa55a6f4fbefdd405157741c989f3541191446c76b3135ed905bdd045d29a93",
+  "modules": {
+    "hwmon.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "9191ca4594dd72e10af87756be9afe613df5e0fd0cd3eab50768fa32867986b9",
+      "undefined_symbols": 29
+    },
+    "nf_socket_ipv4.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "405b8f11854586ac381d617be943dd6bd786be82589f673b6cb53205aee414e9",
+      "undefined_symbols": 9
+    },
+    "nf_socket_ipv6.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "ca56f53861b4326cc501cd0f5c38110548ceaad8726055f5515a9f7d918f2895",
+      "undefined_symbols": 11
+    },
+    "nf_tables_set.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables"
+      ],
+      "sha256": "daa4c1ca1d4e6b2b137a5cd4af1a248eef8d5500030e22e948be7fe101c17b1f",
+      "undefined_symbols": 43
+    },
+    "nf_tproxy_ipv4.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "4fbe4b02f947f05d77f2c72b99a6f21ab973dea0a203da7fceabe0a7cc322a14",
+      "undefined_symbols": 13
+    },
+    "nf_tproxy_ipv6.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "0f575328d56ae84cf1a0a00e12b75d14f7e70a63fd4c69961a1e189a2ae0f6b7",
+      "undefined_symbols": 15
+    },
+    "nft_chain_nat.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_nat",
+        "nf_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_nat",
+        "nf_tables"
+      ],
+      "sha256": "52c7dd46de996280b4831ea4395e84874f1824b5ceaac4ea46cfb6abf3cfb2d0",
+      "undefined_symbols": 12
+    },
+    "nft_fib.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables"
+      ],
+      "sha256": "fe06922ce1093d2e9ac26193d4bbf3a3d4777c5447a9e51cc6f3ebc826b11ce1",
+      "undefined_symbols": 8
+    },
+    "nft_fib_inet.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables",
+        "nft_fib",
+        "nft_fib_ipv4",
+        "nft_fib_ipv6"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables",
+        "nft_fib",
+        "nft_fib_ipv4",
+        "nft_fib_ipv6"
+      ],
+      "sha256": "18b863b1158daff80329234f5f05b99eccdfbf0562108c2609e49ff100b1d26e",
+      "undefined_symbols": 10
+    },
+    "nft_fib_ipv4.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables",
+        "nft_fib"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables",
+        "nft_fib"
+      ],
+      "sha256": "e236f9b8b56ae026279ed8d44979f1890f45d558812bc30078f94d227bde43fb",
+      "undefined_symbols": 16
+    },
+    "nft_fib_ipv6.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables",
+        "nft_fib"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables",
+        "nft_fib"
+      ],
+      "sha256": "c8698ca499b61ae138ee828f7f419cab8da5c89d7278d12a7ab92a6a291c85af",
+      "undefined_symbols": 15
+    },
+    "nft_hash.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_tables"
+      ],
+      "sha256": "62e8337c3c50e0c8a48bef93a63ce1547b4c6af31ca5d3e7c8db0cad33fc829f",
+      "undefined_symbols": 12
+    },
+    "sha3_generic.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [],
+      "missing_exports": [],
+      "provider_modules": [],
+      "sha256": "f6d29f00852c37c687e2719a500e66b72dfccbf0cf5d18459b91db15335b303e",
+      "undefined_symbols": 4
+    },
+    "xt_TPROXY.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_defrag_ipv4",
+        "nf_defrag_ipv6",
+        "nf_tproxy_ipv4",
+        "nf_tproxy_ipv6",
+        "x_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_defrag_ipv4",
+        "nf_defrag_ipv6",
+        "nf_tproxy_ipv4",
+        "nf_tproxy_ipv6",
+        "x_tables"
+      ],
+      "sha256": "14e3af32eb26b5070a932240bab595822da81903f42c0c420c823fc35f3a1cd3",
+      "undefined_symbols": 19
+    },
+    "xt_iprange.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "x_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "x_tables"
+      ],
+      "sha256": "7d4cc5de1e84de5a324d1a23d22c091aa1cd77cf0266ae3c6fa276c84c39e621",
+      "undefined_symbols": 3
+    },
+    "xt_socket.ko": {
+      "dependencies_complete": true,
+      "embedded_dependencies": [
+        "nf_defrag_ipv4",
+        "nf_defrag_ipv6",
+        "nf_socket_ipv4",
+        "nf_socket_ipv6",
+        "x_tables"
+      ],
+      "missing_exports": [],
+      "provider_modules": [
+        "nf_defrag_ipv4",
+        "nf_defrag_ipv6",
+        "nf_socket_ipv4",
+        "nf_socket_ipv6",
+        "x_tables"
+      ],
+      "sha256": "2150397f318a65ff8a9bf3bddf06872e5529da6f40c6c630a168c5f6c2a07222",
+      "undefined_symbols": 10
+    }
+  },
+  "packages": {
+    "kmod-crypto-sha3": [
+      "sha3_generic"
+    ],
+    "kmod-hwmon-core": [
+      "hwmon"
+    ],
+    "kmod-ipt-conntrack-extra": [
+      "nf_conncount",
+      "xt_connbytes",
+      "xt_connlimit",
+      "xt_connmark",
+      "xt_helper",
+      "xt_recent"
+    ],
+    "kmod-ipt-iprange": [
+      "xt_iprange"
+    ],
+    "kmod-ipt-nat": [
+      "iptable_nat",
+      "xt_nat",
+      "xt_MASQUERADE",
+      "xt_REDIRECT"
+    ],
+    "kmod-ipt-socket": [
+      "xt_socket"
+    ],
+    "kmod-ipt-tproxy": [
+      "xt_TPROXY"
+    ],
+    "kmod-nf-socket": [
+      "nf_socket_ipv4",
+      "nf_socket_ipv6"
+    ],
+    "kmod-nf-tproxy": [
+      "nf_tproxy_ipv4",
+      "nf_tproxy_ipv6"
+    ],
+    "kmod-nft-core": [
+      "nf_tables",
+      "nf_tables_set",
+      "nft_hash"
+    ],
+    "kmod-nft-fib": [
+      "nft_fib",
+      "nft_fib_ipv4",
+      "nft_fib_ipv6",
+      "nft_fib_inet"
+    ],
+    "kmod-nft-nat": [
+      "nft_chain_nat",
+      "nft_nat",
+      "nft_masq",
+      "nft_redir"
+    ]
+  },
+  "public_kernel_commit": "d4b74ee3b5f65dcd6f26797eab957846ab03b3ad",
+  "qualification": {
+    "boot_partitions_unchanged": true,
+    "date": "2026-09-19",
+    "limits": "Isolated loopback RAM tests only; not end-to-end PassWall, NSS traffic, reboot or long-term soak acceptance.",
+    "load_unload": true,
+    "nft_sets_fib_hash_nat_ipv4_ipv6": true,
+    "sha3_selftest": true,
+    "taint_after": 1,
+    "taint_before": 1,
+    "tproxy_tcp_ipv4_ipv6_roundtrip": true,
+    "tproxy_udp_ipv4_ipv6_receive": true
+  },
+  "release": "1.5.3-14-652192-g202604022107",
+  "retained_modules": {
+    "iptable_nat.ko": "82890f85888b7d81b4c23203eb917250a7a13128b3a65fbafb8235214d97e369",
+    "nf_conncount.ko": "d5bb7bafce2f0f8e606bb4645be65ba841cb174254380b1538586ed588a51087",
+    "nf_defrag_ipv4.ko": "83f4a51c01e1815745128cd7b483ec7fe1bad6add47c5c3bc9ba9721827fdd55",
+    "nf_defrag_ipv6.ko": "ee901ec0964f91865820b4b6d2155a1f26e7bf6ab61d081fc085ec2d081c623d",
+    "nf_nat.ko": "07ee3cafcbbc643b03e2a5144235c35cc9cddc2c585afc81a9f178410dfdd9a9",
+    "nf_tables.ko": "43f8324ef56be034e715a4b7b71a740d211c88ba233a3d642f9714c9f054a58a",
+    "nft_masq.ko": "15a26d4cd3876f91b6ba74018aac519b242ec1ff7b107a418c2f667e2206ebfc",
+    "nft_nat.ko": "a229fbbfd8b9c08e9eaaf3021be9042981bd835b5e256181bac25a310daf018a",
+    "nft_redir.ko": "e64548619c3bf18882e4812245d552d4e9e02d86271c614a46dab145db43faf7",
+    "x_tables.ko": "0354215574a446478cd984ec8021dd2154e26069dd8d20ba39fdb8394e59b6a1",
+    "xt_MASQUERADE.ko": "bc1cf2e2355b564fbade4a43a1606438c950f7432107e3c5f86ffb626548a6af",
+    "xt_REDIRECT.ko": "a831d0bdbdd8785163bca0432428fd7fa9eee5c70cb05160a7f21dfc8a414ff9",
+    "xt_connbytes.ko": "ca3de4d5d86ddb0549b177686b94cbafac51c6536b822af288843a9547ef34bb",
+    "xt_connlimit.ko": "b8b349d8b7d25501b44bdeb52059f1f66d85a0563110fd223d2c4cd4f18d907e",
+    "xt_connmark.ko": "034958af4def4cc11e3d304a2a022cf5ce515e8f59578a6d3f61c4368a6e62d3",
+    "xt_helper.ko": "82cdcba87614ec22458d7927c34abe9a22a495f5b02afe84a83cd6851715e4dc",
+    "xt_nat.ko": "23bc3868e8addf91a632179fabd4c817c7857ad57ef968c95f0b7134a477f6cd",
+    "xt_recent.ko": "a213c8048683560ec15416118f13985460321731b1e6470126c1d850ce0d123b"
+  },
+  "source_sha256": "29bd146baf66b535cba7fe7af58864db65133cfac07ce66297da905c57eb9ec9"
+}

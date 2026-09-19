@@ -1,0 +1,51 @@
+From b099d050b59d83f6f0962ac0cf8e5afd80678049 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Thu, 16 Apr 2026 22:24:56 +0200
+Subject: [PATCH] libubus: make ubus_shutdown idempotent
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ubus_shutdown() left ctx->sock.fd and ctx->msgbuf.data dangling after
+releasing them. The header documents shutdown as paired one-to-one with
+ubus_connect_ctx(), but the function is exposed and a caller that
+violates the contract — most realistically by invoking ubus_shutdown()
+explicitly and then ubus_free() (which calls shutdown a second time) —
+would close an unrelated descriptor the kernel may have recycled in the
+interim and double-free the msgbuf.
+
+Guard the close with a validity check and reset both fields after
+release so subsequent calls become no-ops. This also brings the tear-
+down path in line with ubus_reconnect()'s error handling, which already
+sets sock.fd to -1 after closing.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ libubus.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/libubus.c b/libubus.c
+index 555930d..f5a50e9 100644
+--- a/libubus.c
++++ b/libubus.c
+@@ -447,9 +447,13 @@ void ubus_shutdown(struct ubus_context *ctx)
+ 	if (!ctx)
+ 		return;
+ 	uloop_fd_delete(&ctx->sock);
+-	close(ctx->sock.fd);
++	if (ctx->sock.fd >= 0) {
++		close(ctx->sock.fd);
++		ctx->sock.fd = -1;
++	}
+ 	uloop_timeout_cancel(&ctx->pending_timer);
+ 	free(ctx->msgbuf.data);
++	ctx->msgbuf.data = NULL;
+ }
+ 
+ void ubus_free(struct ubus_context *ctx)
+-- 
+2.54.0 (Apple Git-157)
+
+

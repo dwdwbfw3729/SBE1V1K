@@ -1,0 +1,10 @@
+{
+	"luci-app-sbe-status": {
+		"description": "Read SBE1V1K hardware status",
+		"read": {
+			"file": {
+				"/usr/sbin/sbe-status --json": [ "exec" ]
+			}
+		}
+	}
+}

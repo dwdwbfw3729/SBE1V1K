@@ -1,0 +1,26 @@
+#!/bin/sh /etc/rc.common
+
+START=29
+STOP=89
+USE_PROCD=1
+
+PROG=/usr/sbin/sbe-thermal-policy
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_set_param respawn 5 5 0
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+stop_service() {
+	# A stopped policy must fail cool, not silently leave the fan at zero.
+	/usr/bin/timeout 3 /usr/sbin/askey_pwm.script fan_ctl 4700 >/dev/null 2>&1 || true
+	/usr/bin/timeout 8 /usr/sbin/sbe-led claim thermal error >/dev/null 2>&1 || true
+}
+
+service_triggers() {
+	procd_add_reload_trigger sbe-hardware pwm
+}

@@ -1,0 +1,220 @@
+From: SBE core-userland compatibility build
+Subject: statefiles: preserve fd-relative PIO I/O on factory json-c 0.12
+
+QSDK json-c 0.12 lacks later fd helpers and unsigned/array-capacity
+constructors. Keep the secure openat() boundary, cap reads to 1 MiB and use
+the older tokener/string APIs. Use the non-deprecated object lookup available
+in 0.12, and provide the small mkdir-p helper missing from old libubox. PIO
+prefix lengths are at most 128, so their signed int64 representation is exact.
+
+--- a/src/statefiles.c
++++ b/src/statefiles.c
+@@ -11,6 +11,7 @@
+ 
+ #include <stdio.h>
+ #include <stdint.h>
++#include <errno.h>
+ #include <stddef.h>
+ #include <string.h>
+ #include <stdlib.h>
+@@ -24,9 +25,11 @@
+ #include <arpa/inet.h>
+ #include <resolv.h>
+ #include <spawn.h>
++#include <sys/stat.h>
+ 
+ #include <libubox/md5.h>
+ #include <json-c/json.h>
++#include <json-c/json_tokener.h>
+ 
+ #include "odhcpd.h"
+ #include "dhcpv6-ia.h"
+@@ -150,7 +153,7 @@ static bool statefiles_ra_pio_time(json_object *slaac_json, time_t *slaac_time)
+ 	time_t pio_json_time, pio_time;
+ 	json_object *time_json;
+ 
+-	time_json = json_object_object_get(slaac_json, JSON_TIME);
++	json_object_object_get_ex(slaac_json, JSON_TIME, &time_json);
+ 	if (!time_json)
+ 		return true;
+ 
+@@ -167,6 +170,59 @@ static bool statefiles_ra_pio_time(json_object *slaac_json, time_t *slaac_time)
+ 	return true;
+ }
+ 
++static json_object *statefiles_json_from_fd(int fd)
++{
++	struct json_tokener *tok;
++	struct stat st;
++	json_object *json;
++	char *data;
++	ssize_t n;
++	size_t off = 0;
++
++	if (fstat(fd, &st) || st.st_size < 0 || st.st_size > 1024 * 1024) {
++		errno = EFBIG;
++		return NULL;
++	}
++
++	data = calloc(1, (size_t)st.st_size + 1);
++	if (!data)
++		return NULL;
++
++	while (off < (size_t)st.st_size) {
++		n = read(fd, data + off, (size_t)st.st_size - off);
++		if (n < 0 && errno == EINTR)
++			continue;
++		if (n <= 0)
++			break;
++		off += (size_t)n;
++	}
++
++	if (off != (size_t)st.st_size) {
++		free(data);
++		errno = EIO;
++		return NULL;
++	}
++
++	tok = json_tokener_new();
++	if (!tok) {
++		free(data);
++		errno = ENOMEM;
++		return NULL;
++	}
++
++	json = json_tokener_parse_ex(tok, data, (int)off);
++	if (json_tokener_get_error(tok) != json_tokener_success) {
++		if (json)
++			json_object_put(json);
++		json = NULL;
++		errno = EINVAL;
++	}
++
++	json_tokener_free(tok);
++	free(data);
++	return json;
++}
++
+ static json_object *statefiles_load_ra_pio_json(struct interface *iface)
+ {
+ 	json_object *json;
+@@ -178,14 +234,12 @@ static json_object *statefiles_load_ra_pio_json(struct interface *iface)
+ 	if (fd < 0)
+ 		return NULL;
+ 
+-	json = json_object_from_fd(fd);
++	json = statefiles_json_from_fd(fd);
+ 
+ 	close(fd);
+ 
+ 	if (!json)
+-		error("rfc9096: %s: json read error %s",
+-		      iface->ifname,
+-		      json_util_get_last_err());
++		error("rfc9096: %s: json read error: %m", iface->ifname);
+ 
+ 	return json;
+ }
+@@ -204,7 +258,7 @@ void statefiles_read_prefix_information(struct interface *iface)
+ 	if (!json)
+ 		return;
+ 
+-	slaac_json = json_object_object_get(json, JSON_SLAAC);
++	json_object_object_get_ex(json, JSON_SLAAC, &slaac_json);
+ 	if (!slaac_json) {
+ 		json_object_put(json);
+ 		return;
+@@ -235,15 +289,15 @@ void statefiles_read_prefix_information(struct interface *iface)
+ 		if (!statefiles_ra_pio_time(cur_pio_json, &pio_lt))
+ 			continue;
+ 
+-		length_json = json_object_object_get(cur_pio_json, JSON_LENGTH);
++		json_object_object_get_ex(cur_pio_json, JSON_LENGTH, &length_json);
+ 		if (!length_json)
+ 			continue;
+ 
+-		prefix_json = json_object_object_get(cur_pio_json, JSON_PREFIX);
++		json_object_object_get_ex(cur_pio_json, JSON_PREFIX, &prefix_json);
+ 		if (!prefix_json)
+ 			continue;
+ 
+-		pio_len = (uint8_t) json_object_get_uint64(length_json);
++		pio_len = (uint8_t) json_object_get_int64(length_json);
+ 		pio_str = json_object_get_string(prefix_json);
+ 		pio = &iface->pios[iface->pio_cnt];
+ 
+@@ -296,7 +350,7 @@ void statefiles_write_prefix_information(struct interface *iface)
+ 	if (!json)
+ 		goto out;
+ 
+-	slaac_json = json_object_new_array_ext(iface->pio_cnt);
++	slaac_json = json_object_new_array();
+ 	if (!slaac_json)
+ 		goto out;
+ 
+@@ -321,7 +375,7 @@ void statefiles_write_prefix_information(struct interface *iface)
+ 			continue;
+ 		}
+ 
+-		len_json = json_object_new_uint64(cur_pio->length);
++		len_json = json_object_new_int64(cur_pio->length);
+ 		if (!len_json) {
+ 			json_object_put(cur_pio_json);
+ 			json_object_put(pfx_json);
+@@ -345,10 +399,9 @@ void statefiles_write_prefix_information(struct interface *iface)
+ 		json_object_array_add(slaac_json, cur_pio_json);
+ 	}
+ 
+-	if (json_object_to_fd(fileno(fp), json, JSON_C_TO_STRING_PLAIN)) {
+-		error("rfc9096: %s: json write error %s",
+-		      iface->ifname,
+-		      json_util_get_last_err());
++	const char *encoded = json_object_to_json_string_ext(json, JSON_C_TO_STRING_PLAIN);
++	if (!encoded || fputs(encoded, fp) == EOF) {
++		error("rfc9096: %s: json write error: %m", iface->ifname);
+ 		goto out;
+ 	}
+ 
+@@ -659,6 +712,33 @@ bool statefiles_write()
+ 	return true;
+ }
+ 
++static int statefiles_mkdir_p(char *path, mode_t mode)
++{
++	char *cursor;
++
++	if (!path || !*path) {
++		errno = EINVAL;
++		return -1;
++	}
++
++	for (cursor = path + 1; *cursor; cursor++) {
++		if (*cursor != '/')
++			continue;
++
++		*cursor = '\0';
++		if (mkdir(path, mode) && errno != EEXIST) {
++			*cursor = '/';
++			return -1;
++		}
++		*cursor = '/';
++	}
++
++	if (mkdir(path, mode) && errno != EEXIST)
++		return -1;
++
++	return 0;
++}
++
+ void statefiles_setup_dirfd(const char *path, int *dirfd)
+ {
+ 	if (!dirfd)
+@@ -672,7 +752,7 @@ void statefiles_setup_dirfd(const char *path, int *dirfd)
+ 	if (!path)
+ 		return;
+ 
+-	mkdir_p(strdupa(path), 0755);
++	statefiles_mkdir_p(strdupa(path), 0755);
+ 
+ 	*dirfd = open(path, O_PATH | O_DIRECTORY | O_CLOEXEC);
+ 	if (*dirfd < 0)

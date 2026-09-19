@@ -1,0 +1,299 @@
+{
+  "format": 1,
+  "stages": [
+    {
+      "name": "kernel-support",
+      "input_prefixes": ["qsdk-build/out/kernel-support-1.5.3/"],
+      "command": ["python3", "{lab}/qsdk-build/build-kernel-support.py"]
+    },
+    {
+      "name": "busybox",
+      "input_prefixes": [
+        "busybox-candidate/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/busybox-candidate/build-candidate.sh",
+        "{qsdk}"
+      ]
+    },
+    {
+      "name": "procd",
+      "input_prefixes": [
+        "procd-board-build/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/procd-board-build/run-in-builder.sh",
+        "repro"
+      ]
+    },
+    {
+      "name": "logd",
+      "input_prefixes": [
+        "logd-candidate/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/logd-candidate/build-candidate.sh",
+        "{qsdk}"
+      ]
+    },
+    {
+      "name": "dropbear",
+      "input_prefixes": [
+        "qsdk-build/out/dropbear-forwarding/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tools/build-component.sh",
+        "dropbear"
+      ]
+    },
+    {
+      "name": "tls",
+      "input_prefixes": [
+        "cache/candidates/openssl-",
+        "cache/candidates/curl-"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tls-curl-candidate/run-docker-build.sh",
+        "oneclick"
+      ],
+      "artifact_directories": [
+        "tls-curl-candidate/out/oneclick"
+      ]
+    },
+    {
+      "name": "ubus",
+      "input_prefixes": [
+        "ubus-security-build/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/ubus-security-build/run-in-builder.sh",
+        "repro"
+      ]
+    },
+    {
+      "name": "cgi-io",
+      "input_prefixes": [
+        "cache/candidates/cgi-io-"
+      ],
+      "command": [
+        "sh",
+        "{lab}/cgi-io-security-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "cgi-io-security-build/candidate-out/cgi-io-security"
+      ]
+    },
+    {
+      "name": "lucihttp",
+      "input_prefixes": [
+        "cache/candidates/liblucihttp"
+      ],
+      "command": [
+        "sh",
+        "{lab}/lucihttp-security-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "lucihttp-security-build/candidate-out/lucihttp-security"
+      ]
+    },
+    {
+      "name": "core",
+      "input_prefixes": [
+        "core-userland-build/",
+        "cache/candidates/uhttpd-",
+        "cache/candidates/rpcd-2026",
+        "cache/candidates/rpcd-mod-file-",
+        "cache/candidates/rpcd-mod-rpcsys-",
+        "cache/candidates/odhcpd-",
+        "cache/candidates/ppp-"
+      ],
+      "command": [
+        "sh",
+        "{lab}/core-userland-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "core-userland-build/candidate-out/core-userland-2026"
+      ]
+    },
+    {
+      "name": "dnsmasq",
+      "input_prefixes": [
+        "passwall-native-candidate/candidate-out/dnsmasq-full_"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tools/build-component.sh",
+        "dnsmasq"
+      ]
+    },
+    {
+      "name": "userland",
+      "input_prefixes": [
+        "cache/candidates/miniupnpd-",
+        "cache/candidates/ntpdate-"
+      ],
+      "command": [
+        "sh",
+        "{lab}/userland-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "userland-build/candidate-out/userland-modern"
+      ]
+    },
+    {
+      "name": "rrdns",
+      "input_prefixes": [
+        "cache/candidates/rpcd-mod-rrdns-"
+      ],
+      "command": [
+        "sh",
+        "{lab}/rrdns-modern-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "rrdns-modern-build/candidate-out/rrdns-modern"
+      ]
+    },
+    {
+      "name": "diagnostics",
+      "input_prefixes": [
+        "cache/candidates/mtr-",
+        "cache/candidates/htop-",
+        "cache/candidates/nano-"
+      ],
+      "command": [
+        "sh",
+        "{lab}/diagnostics-modern-build/run-in-builder.sh",
+        "repro"
+      ],
+      "artifact_directories": [
+        "diagnostics-modern-build/candidate-out/diagnostics-modern"
+      ]
+    },
+    {
+      "name": "ddns",
+      "input_prefixes": [
+        "ddns-native-candidate/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/ddns-native-candidate/run-in-builder.sh"
+      ]
+    },
+    {
+      "name": "luci",
+      "input_prefixes": [
+        "luci-maintenance/candidate-out/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/luci-maintenance/run-in-builder.sh"
+      ]
+    },
+    {
+      "name": "luci-runtime",
+      "input_prefixes": [
+        "luci-maintenance/runtime-candidate-out/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/luci-maintenance/run-runtime-in-builder.sh"
+      ]
+    },
+    {
+      "name": "uci",
+      "input_prefixes": [
+        "uci-security-build/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/uci-security-build/run-qsdk-ab.sh"
+      ]
+    },
+    {
+      "name": "vxlan",
+      "input_prefixes": [
+        "luci-proto-vxlan-candidate/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/luci-proto-vxlan-candidate/build-candidate.sh"
+      ]
+    },
+    {
+      "name": "odhcp6c",
+      "input_prefixes": [
+        "odhcp6c-build/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/odhcp6c-build/build.sh"
+      ]
+    },
+    {
+      "name": "coreutils",
+      "input_prefixes": [
+        "coreutils-native-candidate/"
+      ],
+      "command": [
+        "sh",
+        "{lab}/coreutils-native-candidate/run-in-builder.sh"
+      ]
+    },
+    {
+      "name": "passwall-deps",
+      "input_prefixes": [
+        "passwall-native-deps-candidate/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tools/build-component.sh",
+        "passwall-deps"
+      ]
+    },
+    {
+      "name": "passwall",
+      "input_prefixes": [
+        "passwall-native-candidate/candidate-out/luci-"
+      ],
+      "command": [
+        "bash",
+        "{lab}/passwall-native-candidate/build-luci.sh"
+      ]
+    },
+    {
+      "name": "proxy-cores",
+      "input_prefixes": [
+        "passwall-native-candidate/candidate-out/xray-",
+        "passwall-native-candidate/candidate-out/shadowsocks-",
+        "passwall-native-candidate/candidate-out/sing-box_"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tools/build-component.sh",
+        "proxy-cores"
+      ]
+    },
+    {
+      "name": "xtables",
+      "input_prefixes": [
+        "passwall-build-v2/out/netfilter-candidates/xtables/"
+      ],
+      "command": [
+        "bash",
+        "{lab}/tools/build-component.sh",
+        "xtables"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# package	payload_path	direction	symbol	reason
+lua	/usr/bin/lua	added	__cxa_finalize	optional weak GCC CRT finalizer; absence is permitted by ELF and adds no provider requirement
+

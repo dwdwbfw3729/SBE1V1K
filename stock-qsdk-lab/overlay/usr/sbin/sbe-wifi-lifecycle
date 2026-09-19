@@ -1,0 +1,191 @@
+#!/bin/sh
+
+# Local SBE1V1K replacements for the small pieces of radio lifecycle policy
+# which the factory OpenSync WM used to own.  This helper is deliberately
+# best-effort: a diagnostic/tool failure must never make QSDK's wifi command
+# fail or leave the radios locked.
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+umask 077
+
+state_dir=${SBE_WIFI_STATE_DIR:-/tmp/sbe-wifi-lifecycle}
+sys_class_net=${SBE_WIFI_SYS_CLASS_NET:-/sys/class/net}
+radartool=${SBE_WIFI_RADARTOOL:-/usr/sbin/radartool}
+thermaltool=${SBE_WIFI_THERMALTOOL:-/usr/sbin/thermaltool}
+cfgtool=${SBE_WIFI_CFGTOOL:-/usr/sbin/cfg80211tool}
+iwpriv=${SBE_WIFI_IWPRIV:-/usr/sbin/iwpriv}
+uci=${SBE_WIFI_UCI:-/sbin/uci}
+logger=${SBE_WIFI_LOGGER:-/usr/bin/logger}
+max_nol_bytes=262144
+max_nol_attempts=3
+
+log_notice() {
+	[ -x "$logger" ] || return 0
+	"$logger" -t sbe-wifi-lifecycle "$1" 2>/dev/null || true
+}
+
+ensure_state_dir() {
+	# Never follow a replacement placed at this fixed /tmp path.
+	if [ -L "$state_dir" ] || { [ -e "$state_dir" ] && [ ! -d "$state_dir" ]; }; then
+		rm -f "$state_dir" 2>/dev/null || return 1
+	fi
+	mkdir -p "$state_dir" 2>/dev/null || return 1
+	# Refuse a pre-created directory owned by another uid.  Availability wins
+	# over deleting an object we did not create, and the QSDK radio path keeps
+	# running even when this optional state cannot be trusted.
+	[ -O "$state_dir" ] || return 1
+	chmod 700 "$state_dir" 2>/dev/null || return 1
+}
+
+nol_size_is_safe() {
+	local file="$1" size
+	[ -f "$file" ] && [ ! -L "$file" ] || return 1
+	size=$(wc -c < "$file" 2>/dev/null | tr -d '[:space:]') || return 1
+	case "$size" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	[ "$size" -gt 0 ] && [ "$size" -le "$max_nol_bytes" ]
+}
+
+radio_has_nol() {
+	local radio="$1" marker="$sys_class_net/$radio/5g_maxchwidth"
+	[ -r "$marker" ] && grep -q '[^[:space:]]' "$marker" 2>/dev/null
+}
+
+export_nol() {
+	local radio="$1" tmp="$2" attempt=1
+	while [ "$attempt" -le "$max_nol_attempts" ]; do
+		rm -f "$tmp" 2>/dev/null || true
+		if "$radartool" -i "$radio" getnol "$tmp" >/dev/null 2>&1 && \
+		   nol_size_is_safe "$tmp"; then
+			return 0
+		fi
+		[ "$attempt" -eq "$max_nol_attempts" ] || sleep 1
+		attempt=$((attempt + 1))
+	done
+	return 1
+}
+
+save_nol() {
+	local radio tmp output
+	[ -x "$radartool" ] || return 0
+	ensure_state_dir || {
+		log_notice 'DFS NOL save skipped: unsafe RAM state directory'
+		return 0
+	}
+
+	for radio in wifi0 wifi1 wifi2; do
+		radio_has_nol "$radio" || continue
+		tmp="$state_dir/.nol_${radio}.$$"
+		output="$state_dir/nol_${radio}.bin"
+		if export_nol "$radio" "$tmp"; then
+			mv -f "$tmp" "$output" 2>/dev/null || true
+			chmod 600 "$output" 2>/dev/null || true
+		else
+			rm -f "$tmp" 2>/dev/null || true
+			log_notice "DFS NOL save failed for $radio; retaining prior RAM copy"
+		fi
+	done
+	return 0
+}
+
+restore_nol() {
+	local radio input
+	[ -x "$radartool" ] || return 0
+	ensure_state_dir || {
+		log_notice 'DFS NOL restore skipped: unsafe RAM state directory'
+		return 0
+	}
+
+	for radio in wifi0 wifi1 wifi2; do
+		[ -d "$sys_class_net/$radio" ] || continue
+		input="$state_dir/nol_${radio}.bin"
+		nol_size_is_safe "$input" || continue
+		"$radartool" -i "$radio" setnol "$input" >/dev/null 2>&1 || \
+			log_notice "DFS NOL restore failed for $radio"
+	done
+	return 0
+}
+
+apply_thermal_policy() {
+	local radio failed
+	[ -x "$thermaltool" ] || return 0
+
+	for radio in wifi0 wifi1 wifi2; do
+		[ -d "$sys_class_net/$radio" ] || continue
+		failed=0
+		"$thermaltool" -i "$radio" -set -hi0 110 >/dev/null 2>&1 || failed=1
+		"$thermaltool" -i "$radio" -set -lo1 110 -hi1 120 >/dev/null 2>&1 || failed=1
+		"$thermaltool" -i "$radio" -set -lo2 120 -hi2 130 >/dev/null 2>&1 || failed=1
+		"$thermaltool" -i "$radio" -set -lo3 130 -hi3 140 >/dev/null 2>&1 || failed=1
+		[ "$failed" -eq 0 ] || log_notice "radio thermal policy failed for $radio"
+	done
+	return 0
+}
+
+channel_for() {
+	local radio="$1" channel
+	channel=$($uci -q get "wireless.$radio.channel" 2>/dev/null) || channel=auto
+	[ -n "$channel" ] || channel=auto
+	printf '%s\n' "$channel"
+}
+
+dcs_value_for() {
+	local radio="$1" channel="$2"
+	case "$channel" in
+		auto|0)
+			case "$radio" in
+				# Qualcomm documents CW-only DCS for 2.4 GHz.
+				wifi0) printf '1\n' ;;
+				# The QSDK 5 GHz radio supports CW and WLAN mitigation.
+				wifi2) printf '3\n' ;;
+				# Keep 6 GHz runtime DCS off until this exact QSDK/AFC path is
+				# verified on hardware.  Initial ACS still runs for channel=auto.
+				wifi1) printf '0\n' ;;
+			esac
+		;;
+		*)
+			# A fixed or malformed channel must never be changed by DCS.
+			printf '0\n'
+		;;
+	esac
+}
+
+set_dcs() {
+	local radio="$1" value="$2"
+	if [ -x "$cfgtool" ]; then
+		"$cfgtool" "$radio" dcs_enable "$value" >/dev/null 2>&1
+	elif [ -x "$iwpriv" ]; then
+		"$iwpriv" "$radio" dcs_enable "$value" >/dev/null 2>&1
+	else
+		return 1
+	fi
+}
+
+apply_dcs_policy() {
+	local radio channel value
+	for radio in wifi0 wifi1 wifi2; do
+		[ -d "$sys_class_net/$radio" ] || continue
+		channel=$(channel_for "$radio")
+		value=$(dcs_value_for "$radio" "$channel")
+		set_dcs "$radio" "$value" || \
+			log_notice "DCS policy failed for $radio"
+	done
+	return 0
+}
+
+case "${1:-}" in
+	save-nol) save_nol ;;
+	restore-nol) restore_nol ;;
+	apply-radio-policy)
+		apply_thermal_policy
+		apply_dcs_policy
+	;;
+	*)
+		echo 'usage: sbe-wifi-lifecycle {save-nol|restore-nol|apply-radio-policy}' >&2
+		exit 2
+	;;
+esac
+
+exit 0

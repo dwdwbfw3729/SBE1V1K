@@ -1,0 +1,6 @@
+# package	payload_path	direction	symbol	provider_path	reason
+libubus-lua	/usr/lib/lua/ubus.so	added	__stack_chk_fail	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/root-ipq95xx/lib/libc.so	QSDK board hardening adds a required stack-protector failure hook supplied by the locked factory-ABI musl libc
+libubus-lua	/usr/lib/lua/ubus.so	added	__stack_chk_guard	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/root-ipq95xx/lib/libc.so	QSDK board hardening adds a required stack-protector guard supplied by the locked factory-ABI musl libc
+libuci-lua	/usr/lib/lua/uci.so	added	__stack_chk_fail	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/root-ipq95xx/lib/libc.so	QSDK board hardening adds a required stack-protector failure hook supplied by the locked factory-ABI musl libc
+libuci-lua	/usr/lib/lua/uci.so	added	__stack_chk_guard	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/root-ipq95xx/lib/libc.so	QSDK board hardening adds a required stack-protector guard supplied by the locked factory-ABI musl libc
+

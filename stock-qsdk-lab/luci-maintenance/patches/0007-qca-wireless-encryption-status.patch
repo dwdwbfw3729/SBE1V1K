@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: QSDK LuCI maintenance <noreply@localhost>
+Date: Thu, 17 Sep 2026 15:10:00 +0800
+Subject: [PATCH] luci-mod-network: show configured QCA status fallbacks
+
+The QSDK runtime wireless status leaves the formatted encryption field as a
+dash even while hostapd is running with encryption, and reports the global
+world regulatory domain instead of the configured self-managed PHY country.
+Keep useful runtime data, but fall back to the QCA UCI mappings when those two
+runtime fields are missing so the overview and edit modal remain accurate.
+---
+ .../luci-static/resources/view/network/wireless.js | 54 ++++++++++++++++++++--
+ 1 file changed, 51 insertions(+), 3 deletions(-)
+
+diff --git a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+index 441dda5f2ff58d9ea214f5cb842bb136e52345b4..b7b1da465652a3d3169db4607d5a432eef7c19a3 100644
+--- a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
++++ b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+@@ -171,7 +171,7 @@ function render_network_status(radioNet) {
+ 		is_mesh ? _('Mesh ID') : _('SSID'), (is_mesh ? radioNet.getMeshID() : radioNet.getSSID()) || '?',
+ 		_('Mode'),       mode,
+ 		_('BSSID'),      (!changecount && is_assoc) ? bssid : null,
+-		_('Encryption'), (!changecount && is_assoc) ? radioNet.getActiveEncryption() || _('None') : null,
++		_('Encryption'), (!changecount && is_assoc) ? qcaActiveEncryption(radioNet) || _('None') : null,
+ 		null,            status_text
+ 	], [ ' | ', E('br') ]);
+ }
+@@ -195,13 +195,13 @@ function render_modal_status(node, radioNet) {
+ 		_('Mode'),       mode,
+ 		_('SSID'),       radioNet.getSSID() || '?',
+ 		_('BSSID'),      is_assoc ? bssid : null,
+-		_('Encryption'), is_assoc ? radioNet.getActiveEncryption() || _('None') : null,
++		_('Encryption'), is_assoc ? qcaActiveEncryption(radioNet) || _('None') : null,
+ 		_('Channel'),    is_assoc ? '%d (%.3f %s)'.format(radioNet.getChannel(), radioNet.getFrequency() || 0, _('GHz')) : null,
+ 		_('Tx-Power'),   is_assoc ? '%d %s'.format(radioNet.getTXPower(), _('dBm')) : null,
+ 		_('Signal'),     is_assoc ? '%d %s'.format(radioNet.getSignal(), _('dBm')) : null,
+ 		_('Noise'),      (is_assoc && noise != null) ? '%d %s'.format(noise, _('dBm')) : null,
+ 		_('Bitrate'),    is_assoc ? '%.1f %s'.format(radioNet.getBitRate() || 0, _('Mbit/s')) : null,
+-		_('Country'),    is_assoc ? radioNet.getCountryCode() : null
++		_('Country'),    is_assoc ? qcaActiveCountry(radioNet) : null
+ 	], [ ' | ', E('br'), E('br'), E('br'), E('br'), E('br'), ' | ', E('br'), ' | ' ]);
+ 
+ 	if (!is_assoc)
+@@ -308,6 +308,55 @@ function qcaWifiType(type) {
+ 	return type == 'qcawificfg80211';
+ }
+ 
++function qcaActiveEncryption(radioNet) {
++	var active = radioNet.getActiveEncryption(),
++	    device = radioNet.getWifiDeviceName(),
++	    type = uci.get('wireless', device, 'type');
++
++	if (!qcaWifiType(type) || (active && active != '-' && active != '?'))
++		return active;
++
++	var section = radioNet.getName(),
++	    configured = qcaEncryptionCfgValue(type, {
++		encryption: uci.get('wireless', section, 'encryption'),
++		sae: uci.get('wireless', section, 'sae'),
++		owe: uci.get('wireless', section, 'owe'),
++		ieee80211w: uci.get('wireless', section, 'ieee80211w'),
++		suite_b: uci.get('wireless', section, 'suite_b')
++	    });
++
++	switch (configured) {
++	case 'sae':
++		return _('WPA3-SAE');
++	case 'sae-mixed':
++		return _('WPA2-PSK/WPA3-SAE Mixed Mode');
++	case 'owe':
++		return _('OWE');
++	case 'psk2':
++		return _('WPA2-PSK');
++	case 'wep-open':
++		return _('WEP Open System');
++	case 'wep-shared':
++		return _('WEP Shared Key');
++	case 'none':
++		return _('None');
++	default:
++		return configured || active;
++	}
++}
++
++function qcaActiveCountry(radioNet) {
++	var active = radioNet.getCountryCode(),
++	    device = radioNet.getWifiDeviceName(),
++	    type = uci.get('wireless', device, 'type'),
++	    configured = uci.get('wireless', device, 'country');
++
++	if (qcaWifiType(type) && configured && (!active || active == '00'))
++		return configured;
++
++	return active;
++}
++
+ function qcaFrequencyBand(mhz) {
+ 	mhz = +mhz;
+ 
+-- 
+2.50.1

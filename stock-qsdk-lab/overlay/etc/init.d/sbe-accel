@@ -1,0 +1,24 @@
+#!/bin/sh /etc/rc.common
+
+START=27
+
+apply_vendor_tuning() {
+	local interface
+	for interface in eth0 eth1 eth2 eth3; do
+		[ -d "/sys/class/net/$interface" ] || continue
+		command -v ethtool >/dev/null 2>&1 && \
+			ethtool -A "$interface" rx on tx on autoneg on >/dev/null 2>&1
+	done
+
+	[ -w /proc/sys/net/ecm/udp_denied_ports ] && \
+		echo 'add 53 67 146' > /proc/sys/net/ecm/udp_denied_ports
+	[ -w /proc/sys/ppe/ppe_drv/if_bm_to_offload ] && \
+		echo 48 > /proc/sys/ppe/ppe_drv/if_bm_to_offload
+	[ -w /proc/sys/ppe/ppe_drv/eth2eth_offload_if_bitmap ] && \
+		echo 1 > /proc/sys/ppe/ppe_drv/eth2eth_offload_if_bitmap
+}
+
+start() {
+	apply_vendor_tuning
+}
+

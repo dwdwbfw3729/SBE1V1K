@@ -1,0 +1,741 @@
+diff --git a/modules/luci-base/po/zh_Hans/base.po b/modules/luci-base/po/zh_Hans/base.po
+--- a/modules/luci-base/po/zh_Hans/base.po
++++ b/modules/luci-base/po/zh_Hans/base.po
+@@ -6927,3 +6927,737 @@
+ 
+ #~ msgid "Pre-emtive CRC errors (CRCP_P)"
+ #~ msgstr "抢占式 CRC 错误（CRCP_P）"
++
++# SBE1V1K hardware status and enclosure LED views.
++
++#: SBE1V1K custom LuCI views
++msgid "Country/region"
++msgstr "国家/地区"
++
++#: SBE1V1K custom LuCI views
++msgid "Driver"
++msgstr "驱动"
++
++#: SBE1V1K custom LuCI views
++msgid "Runtime state"
++msgstr "运行状态"
++
++#: SBE1V1K custom LuCI views
++msgid "%d days"
++msgstr "%d 天"
++
++#: SBE1V1K custom LuCI views
++msgid "%d hours"
++msgstr "%d 小时"
++
++#: SBE1V1K custom LuCI views
++msgid "%d minutes"
++msgstr "%d 分钟"
++
++#: SBE1V1K custom LuCI views
++msgid "%d seconds"
++msgstr "%d 秒"
++
++#: SBE1V1K custom LuCI views
++msgid "%d seconds ago"
++msgstr "%d 秒前"
++
++#: SBE1V1K custom LuCI views
++msgid "%d/%d configured APs running; %d/3 radio configurations present"
++msgstr "%d/%d 个已配置 AP 正在运行，%d/3 个射频配置存在"
++
++#: SBE1V1K custom LuCI views
++msgid "%d/4 drivers loaded"
++msgstr "%d/4 个驱动已加载"
++
++#: SBE1V1K custom LuCI views
++msgid "/tmp usage"
++msgstr "/tmp 使用率"
++
++#: SBE1V1K custom LuCI views
++msgid "2.4 / 6 / 5 GHz: %d / %d / %d chains"
++msgstr "2.4 / 6 / 5 GHz：%d / %d / %d 条"
++
++#: SBE1V1K custom LuCI views
++msgid "2.4 GHz radio temperature"
++msgstr "2.4 GHz 无线温度"
++
++#: SBE1V1K custom LuCI views
++msgid "5 GHz radio temperature"
++msgstr "5 GHz 无线温度"
++
++#: SBE1V1K custom LuCI views
++msgid "6 GHz radio temperature"
++msgstr "6 GHz 无线温度"
++
++#: SBE1V1K custom LuCI views
++msgid "Active pattern"
++msgstr "实际灯效"
++
++#: SBE1V1K custom LuCI views
++msgid "Actual fan speed"
++msgstr "实际风扇转速"
++
++#: SBE1V1K custom LuCI views
++msgid "Allowed fan speed range"
++msgstr "允许转速范围"
++
++#: SBE1V1K custom LuCI views
++msgid "Attention required"
++msgstr "需要检查"
++
++#: SBE1V1K custom LuCI views
++msgid "Blue (blinking)"
++msgstr "蓝色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Blue (breathing)"
++msgstr "蓝色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Blue (steady)"
++msgstr "蓝色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "CPU temperature"
++msgstr "CPU 温度"
++
++#: SBE1V1K custom LuCI views
++msgid "Choose the status LED pattern for network and maintenance events. Changes take effect after Save & Apply."
++msgstr "为联网状态及维护操作选择指示灯效果。保存并应用后生效。"
++
++#: SBE1V1K custom LuCI views
++msgid "Configuration source"
++msgstr "配置来源"
++
++#: SBE1V1K custom LuCI views
++msgid "Configuration unavailable"
++msgstr "配置不可用"
++
++#: SBE1V1K custom LuCI views
++msgid "Connecting"
++msgstr "正在连接"
++
++#: SBE1V1K custom LuCI views
++msgid "Connecting to WAN"
++msgstr "正在连接外网"
++
++#: SBE1V1K custom LuCI views
++msgid "Connection tracking usage"
++msgstr "连接跟踪使用率"
++
++#: SBE1V1K custom LuCI views
++msgid "Control source"
++msgstr "控制来源"
++
++#: SBE1V1K custom LuCI views
++msgid "Cooling level"
++msgstr "散热档位"
++
++#: SBE1V1K custom LuCI views
++msgid "Critical-temperature samples"
++msgstr "临界温度样本"
++
++#: SBE1V1K custom LuCI views
++msgid "Current LED pattern"
++msgstr "当前灯效"
++
++#: SBE1V1K custom LuCI views
++msgid "Current state"
++msgstr "当前状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Device and runtime"
++msgstr "设备与运行环境"
++
++#: SBE1V1K custom LuCI views
++msgid "Device model"
++msgstr "设备型号"
++
++#: SBE1V1K custom LuCI views
++msgid "Disabled (%s)"
++msgstr "未启用（%s）"
++
++#: SBE1V1K custom LuCI views
++msgid "Disabled (optional)"
++msgstr "未启用（可选）"
++
++#: SBE1V1K custom LuCI views
++msgid "Disconnected"
++msgstr "网络断开"
++
++#: SBE1V1K custom LuCI views
++msgid "Enable normal status LED"
++msgstr "启用日常状态灯"
++
++#: SBE1V1K custom LuCI views
++msgid "Enabled in configuration, but AP is not running"
++msgstr "配置已启用，但 AP 未运行"
++
++#: SBE1V1K custom LuCI views
++msgid "Enabled, AP is running"
++msgstr "已启用，AP 正在运行"
++
++#: SBE1V1K custom LuCI views
++msgid "Factory reset"
++msgstr "恢复出厂"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan fault / recovery samples"
++msgstr "风扇异常 / 恢复样本"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan speed data is stale"
++msgstr "转速数据过期"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan speed sample age"
++msgstr "转速采样时间"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan status"
++msgstr "风扇状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Fault"
++msgstr "故障"
++
++#: SBE1V1K custom LuCI views
++msgid "Fault: %s"
++msgstr "故障：%s"
++
++#: SBE1V1K custom LuCI views
++msgid "File handle usage"
++msgstr "文件句柄使用率"
++
++#: SBE1V1K custom LuCI views
++msgid "Firmware upgrade"
++msgstr "固件升级"
++
++#: SBE1V1K custom LuCI views
++msgid "Firmware version"
++msgstr "固件版本"
++
++#: SBE1V1K custom LuCI views
++msgid "General settings"
++msgstr "基本设置"
++
++#: SBE1V1K custom LuCI views
++msgid "Green (blinking)"
++msgstr "绿色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Green (breathing)"
++msgstr "绿色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Green (steady)"
++msgstr "绿色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "HTTP U-Boot (p27)"
++msgstr "HTTP U-Boot（p27）"
++
++#: SBE1V1K custom LuCI views
++msgid "Hardware Status"
++msgstr "硬件状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Hardware acceleration"
++msgstr "硬件加速"
++
++#: SBE1V1K custom LuCI views
++msgid "Hardware fault"
++msgstr "硬件故障"
++
++#: SBE1V1K custom LuCI views
++msgid "High-temperature operation"
++msgstr "高温运行"
++
++#: SBE1V1K custom LuCI views
++msgid "Invalid: %s"
++msgstr "异常：%s"
++
++#: SBE1V1K custom LuCI views
++msgid "IoT temperature"
++msgstr "IoT 温度"
++
++#: SBE1V1K custom LuCI views
++msgid "Kernel version"
++msgstr "内核版本"
++
++#: SBE1V1K custom LuCI views
++msgid "LED pattern rules"
++msgstr "灯效规则"
++
++#: SBE1V1K custom LuCI views
++msgid "Last state change"
++msgstr "最近状态变化"
++
++#: SBE1V1K custom LuCI views
++msgid "Last update"
++msgstr "更新时间"
++
++#: SBE1V1K custom LuCI views
++msgid "Loaded"
++msgstr "已加载"
++
++#: SBE1V1K custom LuCI views
++msgid "Local resource watchdog"
++msgstr "本地资源看门狗"
++
++#: SBE1V1K custom LuCI views
++msgid "Local watchdog and resources"
++msgstr "本机守护与资源"
++
++#: SBE1V1K custom LuCI views
++msgid "Missing"
++msgstr "缺失"
++
++#: SBE1V1K custom LuCI views
++msgid "Missing processes"
++msgstr "缺失进程"
++
++#: SBE1V1K custom LuCI views
++msgid "Module loaded"
++msgstr "模块已加载"
++
++#: SBE1V1K custom LuCI views
++msgid "Multicolor (alternating blink)"
++msgstr "多色交替闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Multicolor (alternating breath)"
++msgstr "多色交替呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Network status"
++msgstr "联网状态"
++
++#: SBE1V1K custom LuCI views
++msgid "No data available"
++msgstr "没有可用数据"
++
++#: SBE1V1K custom LuCI views
++msgid "Normal LED disabled"
++msgstr "日常灯已关闭"
++
++#: SBE1V1K custom LuCI views
++msgid "Normal base state"
++msgstr "日常基础状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Normal status"
++msgstr "常规状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Not detected"
++msgstr "未检测到"
++
++#: SBE1V1K custom LuCI views
++msgid "Not loaded"
++msgstr "未加载"
++
++#: SBE1V1K custom LuCI views
++msgid "Not loaded (default)"
++msgstr "未加载（默认）"
++
++#: SBE1V1K custom LuCI views
++msgid "Not set"
++msgstr "未设置"
++
++#: SBE1V1K custom LuCI views
++msgid "OVS acceleration policy"
++msgstr "OVS 加速策略"
++
++#: SBE1V1K custom LuCI views
++msgid "OVS dependency"
++msgstr "OVS 依赖"
++
++#: SBE1V1K custom LuCI views
++msgid "PWM duty value"
++msgstr "PWM 占空值"
++
++#: SBE1V1K custom LuCI views
++msgid "Pattern"
++msgstr "灯效"
++
++#: SBE1V1K custom LuCI views
++msgid "Pattern source"
++msgstr "灯效来源"
++
++#: SBE1V1K custom LuCI views
++msgid "Persistent boot requested"
++msgstr "持久化启动请求"
++
++#: SBE1V1K custom LuCI views
++msgid "Persistent operation"
++msgstr "持久化运行"
++
++#: SBE1V1K custom LuCI views
++msgid "Persistent selection source"
++msgstr "持久化选择来源"
++
++#: SBE1V1K custom LuCI views
++msgid "Policy fan speed"
++msgstr "策略风扇转速"
++
++#: SBE1V1K custom LuCI views
++msgid "Present"
++msgstr "存在"
++
++#: SBE1V1K custom LuCI views
++msgid "Purple (blinking)"
++msgstr "紫色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Purple (breathing)"
++msgstr "紫色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Purple (steady)"
++msgstr "紫色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "QSDK version"
++msgstr "QSDK 版本"
++
++#: SBE1V1K custom LuCI views
++msgid "RAM trial"
++msgstr "RAM 试运行"
++
++#: SBE1V1K custom LuCI views
++msgid "RGB status LED"
++msgstr "RGB 状态灯"
++
++#: SBE1V1K custom LuCI views
++msgid "Radio chain reduction failed"
++msgstr "无线降链设置失败"
++
++#: SBE1V1K custom LuCI views
++msgid "Radio transmit chains"
++msgstr "无线发射链"
++
++#: SBE1V1K custom LuCI views
++msgid "Read error"
++msgstr "读取异常"
++
++#: SBE1V1K custom LuCI views
++msgid "Read-write mount detected"
++msgstr "检测到读写挂载"
++
++#: SBE1V1K custom LuCI views
++msgid "Red (blinking)"
++msgstr "红色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Red (breathing)"
++msgstr "红色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Red (steady)"
++msgstr "红色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "Red and white (alternating blink)"
++msgstr "红白交替闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Root filesystem"
++msgstr "根文件系统"
++
++#: SBE1V1K custom LuCI views
++msgid "SBE1V1K Status LED"
++msgstr "SBE1V1K 状态灯"
++
++#: SBE1V1K custom LuCI views
++msgid "Safety and maintenance"
++msgstr "安全与维护"
++
++#: SBE1V1K custom LuCI views
++msgid "State"
++msgstr "状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Status age"
++msgstr "状态更新时间"
++
++#: SBE1V1K custom LuCI views
++msgid "Status collection failed"
++msgstr "状态采集失败"
++
++#: SBE1V1K custom LuCI views
++msgid "Status collector exited with code %d"
++msgstr "状态采集器退出，代码 %d"
++
++#: SBE1V1K custom LuCI views
++msgid "Status is stale"
++msgstr "状态未更新"
++
++#: SBE1V1K custom LuCI views
++msgid "Status unavailable"
++msgstr "状态不可用"
++
++#: SBE1V1K custom LuCI views
++msgid "Stock U-Boot boot argument"
++msgstr "Stock U-Boot 启动参数"
++
++#: SBE1V1K custom LuCI views
++msgid "Storage degraded"
++msgstr "存储异常"
++
++#: SBE1V1K custom LuCI views
++msgid "System ready"
++msgstr "系统就绪"
++
++#: SBE1V1K custom LuCI views
++msgid "Target fan speed"
++msgstr "目标风扇转速"
++
++#: SBE1V1K custom LuCI views
++msgid "Temperature and fan"
++msgstr "温度与风扇"
++
++#: SBE1V1K custom LuCI views
++msgid "Temperature sensors"
++msgstr "温度传感器"
++
++#: SBE1V1K custom LuCI views
++msgid "Temperature too high"
++msgstr "温度过高"
++
++#: SBE1V1K custom LuCI views
++msgid "Temporarily unavailable:"
++msgstr "暂时无法读取："
++
++#: SBE1V1K custom LuCI views
++msgid "Thermal"
++msgstr "温控"
++
++#: SBE1V1K custom LuCI views
++msgid "Thermal configuration"
++msgstr "温控配置"
++
++#: SBE1V1K custom LuCI views
++msgid "Thermal protection"
++msgstr "温控保护"
++
++#: SBE1V1K custom LuCI views
++msgid "Thermal sampling interval"
++msgstr "温控采样周期"
++
++#: SBE1V1K custom LuCI views
++msgid "Status updates every second. Overheating, hardware faults, firmware upgrades and factory resets take precedence over normal network indications."
++msgstr "当前灯效每秒更新。设备过热、硬件故障、固件升级或恢复出厂设置时，提示灯效会优先显示。"
++
++#: SBE1V1K custom LuCI views
++msgid "This page refreshes once per second; the thermal service samples every 10 seconds."
++msgstr "页面每 1 秒自动更新；温控服务每 10 秒采样一次。"
++
++#: SBE1V1K custom LuCI views
++msgid "Track WAN status automatically"
++msgstr "自动跟随 WAN 状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Unable to read hardware status"
++msgstr "无法读取硬件状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Unavailable"
++msgstr "不可用"
++
++#: SBE1V1K custom LuCI views
++msgid "Unexpected read-write mount detected"
++msgstr "检测到非预期读写挂载"
++
++#: SBE1V1K custom LuCI views
++msgid "Upgrade"
++msgstr "升级"
++
++#: SBE1V1K custom LuCI views
++msgid "Used when WAN tracking is disabled."
++msgstr "未跟随 WAN 状态时使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used when an established WAN connection is lost."
++msgstr "已建立的 WAN 连接断开时使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used when the WAN connection is established."
++msgstr "WAN 成功建立连接时使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used when the thermal policy or hardware status reports a serious fault. A prominent red pattern is recommended."
++msgstr "温控策略或硬件状态报告严重故障时使用。建议保留醒目的红色。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used while restoring factory settings."
++msgstr "恢复配置期间使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used while the WAN connection is not established."
++msgstr "WAN 尚未建立连接时使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Used while upgrading the firmware."
++msgstr "升级过程中使用。"
++
++#: SBE1V1K custom LuCI views
++msgid "Valid"
++msgstr "有效"
++
++#: SBE1V1K custom LuCI views
++msgid "WAN connected"
++msgstr "外网已连接"
++
++#: SBE1V1K custom LuCI views
++msgid "WAN disconnected"
++msgstr "外网已断开"
++
++#: SBE1V1K custom LuCI views
++msgid "Waiting for status service"
++msgstr "等待状态服务"
++
++#: SBE1V1K custom LuCI views
++msgid "Waiting for thermal service"
++msgstr "等待温控服务"
++
++#: SBE1V1K custom LuCI views
++msgid "Waiting for watchdog status"
++msgstr "等待守护状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Warnings"
++msgstr "警告"
++
++#: SBE1V1K custom LuCI views
++msgid "Warnings present"
++msgstr "有告警"
++
++#: SBE1V1K custom LuCI views
++msgid "When disabled, normal network states do not light the LED. High-temperature, hardware fault, upgrade and factory-reset indications remain active."
++msgstr "关闭后，正常联网状态不亮灯；高温、硬件故障、升级和恢复出厂提示仍然保留。"
++
++#: SBE1V1K custom LuCI views
++msgid "When enabled, distinguish connecting, connected and disconnected states. When disabled, always use the System ready pattern."
++msgstr "启用时自动区分正在连接、已连接和断开；关闭时始终使用“系统就绪”灯效。"
++
++#: SBE1V1K custom LuCI views
++msgid "White (blinking)"
++msgstr "白色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "White (breathing)"
++msgstr "白色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "White (steady)"
++msgstr "白色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "Wireless hardware"
++msgstr "无线硬件"
++
++#: SBE1V1K custom LuCI views
++msgid "Wireless status"
++msgstr "无线状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Yellow (blinking)"
++msgstr "黄色闪烁"
++
++#: SBE1V1K custom LuCI views
++msgid "Yellow (breathing)"
++msgstr "黄色呼吸"
++
++#: SBE1V1K custom LuCI views
++msgid "Yellow (steady)"
++msgstr "黄色常亮"
++
++#: SBE1V1K custom LuCI views
++msgid "Yes (active)"
++msgstr "是（已生效）"
++
++#: SBE1V1K custom LuCI views
++msgid "Yes (not active)"
++msgstr "是（未生效）"
++
++#: SBE1V1K custom LuCI views
++msgid "Zombie processes"
++msgstr "僵尸进程"
++
++#: SBE1V1K custom LuCI views
++msgid "eMMC read-write mount"
++msgstr "eMMC 读写挂载"
++
++#: SBE1V1K custom LuCI views
++msgid "p30 configuration partition (normal)"
++msgstr "p30 配置分区（正常）"
++
++#: SBE1V1K custom LuCI views
++msgid "Balanced"
++msgstr "均衡散热"
++
++#: SBE1V1K custom LuCI views
++msgid "Charts show the last 15 minutes retained in router memory. History resets when the thermal service or router restarts. Select a legend to show or hide a series."
++msgstr "图表显示路由器内存中最近 15 分钟的数据，温控服务或路由器重启后重新记录。点击图例可显示或隐藏曲线。"
++
++#: SBE1V1K custom LuCI views
++msgid "Cooling profile"
++msgstr "散热策略"
++
++#: SBE1V1K custom LuCI views
++msgid "Cooling status"
++msgstr "散热状态"
++
++#: SBE1V1K custom LuCI views
++msgid "Device and diagnostic details"
++msgstr "设备与诊断详情"
++
++#: SBE1V1K custom LuCI views
++msgid "Early cooling"
++msgstr "提前散热中"
++
++#: SBE1V1K custom LuCI views
++msgid "Early cooling release"
++msgstr "提前散热解除"
++
++#: SBE1V1K custom LuCI views
++msgid "Early cooling requests %d RPM at %d °C and releases at or below %d °C. Higher cooling and fault protection take priority."
++msgstr "预启动转速为 %d RPM；任一有效温度达到 %d °C 时启用，全部降至 %d °C 及以下时解除。更高转速与故障保护优先。"
++
++#: SBE1V1K custom LuCI views
++msgid "Factory"
++msgstr "原厂"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan speed follows the factory thermal policy."
++msgstr "风扇转速由原厂温控策略决定。"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan speed trends"
++msgstr "风扇转速趋势"
++
++#: SBE1V1K custom LuCI views
++msgid "Fan start"
++msgstr "风扇预启动"
++
++#: SBE1V1K custom LuCI views
++msgid "Highest radio temperature"
++msgstr "最高无线温度"
++
++#: SBE1V1K custom LuCI views
++msgid "Now"
++msgstr "现在"
++
++#: SBE1V1K custom LuCI views
++msgid "Temperature readings are four-sample averages."
++msgstr "温度读数为最近四次采样的平均值。"
++
++#: SBE1V1K custom LuCI views
++msgid "Temperature trends"
++msgstr "温度趋势"
++
++#: SBE1V1K custom LuCI views
++msgid "Waiting for fresh samples"
++msgstr "等待新的采样数据"

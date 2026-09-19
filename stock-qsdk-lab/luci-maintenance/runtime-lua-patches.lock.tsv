@@ -1,0 +1,21 @@
+# sha256	path under the locked QSDK package snapshot	semantic
+c49a2c2cbd08e13a29e5783efacf5b87932a429e0e43fde5cf45f0606878b6b7	package/utils/lua/patches-host/010-lua-5.1.3-lnum-full-260308.patch	host-lnum-dual-integer-number
+4284e1d30796b3d91878603b3e22ecb6c7232ba6ba7c7bca9eeb9d7263a4aec9	package/utils/lua/patches-host/011-lnum-use-double.patch	host-double-number
+7cd5611a3f31f5bc4157d044a30eb9c45d46605738de48b4a0454f16cefc580c	package/utils/lua/patches-host/012-lnum-fix-ltle-relational-operators.patch	host-relational-metamethod-fix
+484739291f89b81747358ea61e5d683729843f9b6d74029f14baa5f465b91c98	package/utils/lua/patches-host/013-lnum-strtoul-parsing-fixes.patch	host-integer-overflow-parse-fix
+134db797bade3c114e94c14ef331b454a49aba33b9a5fcb20bc155d4de2fef28	package/utils/lua/patches-host/015-lnum-ppc-compat.patch	host-internal-integer-tag-nine
+a4c0f33770e6d004e495d093b66ab6641596fe546fd608473e1f59916a07b37d	package/utils/lua/patches-host/030-archindependent-bytecode.patch	host-fixed-width-endian-aware-bytecode
+9d7ea819755a4d758467336456d3dba755b2618c6a0a71b397f96cc1c18e66ef	package/utils/lua/patches-host/100-no_readline.patch	host-no-readline
+af9193b55e9cdc1b9b204726c906e22fcd463bce8ac3e2fdec1b969fa8399052	package/utils/lua/patches/010-lua-5.1.3-lnum-full-260308.patch	target-lnum-dual-integer-number
+4284e1d30796b3d91878603b3e22ecb6c7232ba6ba7c7bca9eeb9d7263a4aec9	package/utils/lua/patches/011-lnum-use-double.patch	target-double-number
+44c4cb48b73cfdbb33f216ac2f5f2f40726a97c91394b90080cbb68932ff1256	package/utils/lua/patches/012-lnum-fix-ltle-relational-operators.patch	target-relational-metamethod-fix
+484739291f89b81747358ea61e5d683729843f9b6d74029f14baa5f465b91c98	package/utils/lua/patches/013-lnum-strtoul-parsing-fixes.patch	target-integer-overflow-parse-fix
+134db797bade3c114e94c14ef331b454a49aba33b9a5fcb20bc155d4de2fef28	package/utils/lua/patches/015-lnum-ppc-compat.patch	target-internal-integer-tag-nine
+9c0c5191e84df74f35de7ce1c840e31c1a309857ef08c6f820746d2cc47c0b76	package/utils/lua/patches/020-shared_liblua.patch	target-shared-lib-soname
+a4c0f33770e6d004e495d093b66ab6641596fe546fd608473e1f59916a07b37d	package/utils/lua/patches/030-archindependent-bytecode.patch	target-fixed-width-endian-aware-bytecode
+4224d931ba5d24fb33403f11ba6adbd30031fec3eb36380f1e632ec8b4b58f48	package/utils/lua/patches/040-use-symbolic-functions.patch	target-symbolic-functions
+e7bdccac83984a190308f9e5d02f201c72cb8703039033daa6c7bd6af716bdab	package/utils/lua/patches/050-honor-cflags.patch	target-honor-linker-hardening
+cea568c36adc5d0605f8a6f503365e7441cbcb31b9f11a57d6530247b87c44d0	package/utils/lua/patches/100-no_readline.patch	target-no-readline
+6b15f745550372a3841b252563ebb76868008ec0750131918f9381f20707a634	package/utils/lua/patches/200-lua-path.patch	target-openwrt-module-paths
+953527850509aa9970a4a58ece9c46747bf0e6733c61715e523e6e744b910729	package/utils/lua/patches/300-opcode_performance.patch	target-computed-goto-dispatch
+

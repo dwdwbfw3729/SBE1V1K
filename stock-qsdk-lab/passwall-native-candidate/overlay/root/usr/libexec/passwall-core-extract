@@ -1,0 +1,30 @@
+#!/bin/sh
+# Read the selected executable as bytes. Archive paths never choose destinations.
+set -eu
+format=${1:?format required}
+archive=${2:?archive required}
+name=${3:?component name required}
+destination=${4:?private destination required}
+case "$name" in ''|*[!A-Za-z0-9_-]*) exit 1 ;; esac
+[ -f "$archive" ] && [ ! -L "$archive" ] || exit 1
+[ -d "$destination" ] && [ ! -L "$destination" ] || exit 1
+target=$destination/$name
+[ ! -e "$target" ] && [ ! -L "$target" ] || exit 1
+case "$format" in
+    unzip)
+        unzip -p "$archive" "$name" > "$target"
+        ;;
+    tar)
+        members=$(tar -tzf "$archive" | awk -v name="$name" '
+            { n=split($0,parts,"/"); if(parts[n]==name) print $0 }
+        ')
+        [ -n "$members" ] && [ "$(printf '%s\n' "$members" | wc -l)" -eq 1 ] || exit 1
+        case "/$members/" in *'/../'*|*'/./../'*) exit 1 ;; esac
+        case "$members" in /*) exit 1 ;; esac
+        tar -tvzf "$archive" "$members" | awk 'substr($1,1,1)!="-" { exit 1 }' || exit 1
+        tar -xOzf "$archive" "$members" > "$target"
+        ;;
+    *) exit 1 ;;
+esac
+[ -s "$target" ]
+chmod 0755 "$target"

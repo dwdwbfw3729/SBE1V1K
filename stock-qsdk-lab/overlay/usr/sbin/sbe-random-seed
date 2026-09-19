@@ -1,0 +1,99 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+TAG=sbe-random-seed
+SEED=/data/openwrt/random-seed
+LOCK=/var/lock/sbe-random-seed.lock
+
+is_uint() {
+	case "$1" in
+		''|*[!0-9]*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+
+is_ram_trial() {
+	grep -qw sbe_ram_trial=1 /proc/cmdline
+}
+
+load_settings() {
+	config_load sbe-services
+	config_get_bool enabled random_seed enabled 1
+	config_get interval random_seed interval 21600
+	config_get bytes random_seed bytes 512
+	is_uint "$interval" || interval=21600
+	[ "$interval" -ge 900 ] || interval=900
+	is_uint "$bytes" || bytes=512
+	[ "$bytes" -ge 256 ] || bytes=256
+	[ "$bytes" -le 4096 ] || bytes=4096
+}
+
+lock_seed() {
+	mkdir -p /var/lock
+	mkdir "$LOCK" 2>/dev/null
+}
+
+unlock_seed() {
+	rmdir "$LOCK" 2>/dev/null
+}
+
+save_seed() {
+	local result=0
+	is_ram_trial && return 0
+	load_settings
+	[ "$enabled" -eq 1 ] || return 0
+	[ -d /data/openwrt ] || return 1
+	lock_seed || return 0
+	trap 'rm -f "$SEED.tmp.$$"; unlock_seed' EXIT HUP INT TERM
+
+	umask 077
+	if command -v getrandom >/dev/null 2>&1; then
+		getrandom "$bytes" > "$SEED.tmp.$$" || result=1
+	else
+		dd if=/dev/urandom of="$SEED.tmp.$$" bs="$bytes" count=1 2>/dev/null || result=1
+	fi
+	if [ "$result" -eq 0 ]; then
+		chown 0:0 "$SEED.tmp.$$" || result=1
+		chmod 600 "$SEED.tmp.$$" || result=1
+	fi
+	if [ "$result" -eq 0 ]; then
+		mv -f "$SEED.tmp.$$" "$SEED" || result=1
+	fi
+	rm -f "$SEED.tmp.$$"
+	unlock_seed
+	trap - EXIT HUP INT TERM
+	return "$result"
+}
+
+load_seed() {
+	is_ram_trial && return 0
+	load_settings
+	[ "$enabled" -eq 1 ] || return 0
+	[ -f "$SEED" ] && [ ! -L "$SEED" ] || {
+		save_seed
+		return
+	}
+	[ "$(stat -c %u "$SEED" 2>/dev/null)" = 0 ] || return 1
+	chmod 600 "$SEED"
+	cat "$SEED" > /dev/urandom
+	logger -t "$TAG" 'loaded persistent random seed'
+	# Rotate immediately so the same seed is never reused after a clean boot.
+	save_seed
+}
+
+run_daemon() {
+	load_settings
+	while :; do
+		sleep "$interval"
+		save_seed || logger -t "$TAG" 'failed to save persistent random seed'
+		load_settings
+	done
+}
+
+case "${1:-}" in
+	load) load_seed ;;
+	save) save_seed ;;
+	daemon) run_daemon ;;
+	*) echo "usage: $0 {load|save|daemon}" >&2; exit 2 ;;
+esac

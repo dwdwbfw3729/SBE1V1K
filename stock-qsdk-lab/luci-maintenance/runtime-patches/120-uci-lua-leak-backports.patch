@@ -1,0 +1,86 @@
+diff --git a/package/system/uci/Makefile b/package/system/uci/Makefile
+index e0bbddb..da70be3 100644
+--- a/package/system/uci/Makefile
++++ b/package/system/uci/Makefile
+@@ -8,6 +8,6 @@ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=uci
+-PKG_RELEASE:=4
++PKG_RELEASE:=5
+ 
+ PKG_SOURCE_URL=$(PROJECT_GIT)/project/uci.git
+ PKG_SOURCE_PROTO:=git
+diff --git a/package/system/uci/patches/100-lua-free-config-list.patch b/package/system/uci/patches/100-lua-free-config-list.patch
+new file mode 100644
+index 0000000..f5e54ac
+--- /dev/null
++++ b/package/system/uci/patches/100-lua-free-config-list.patch
+@@ -0,0 +1,38 @@
++From 19ceff323f1e2e7df26031a9fae29fff2edc65bd Mon Sep 17 00:00:00 2001
++From: Petr Stetiar <ynezz@true.cz>
++Date: Mon, 4 Nov 2019 22:41:18 +0100
++Subject: lua: fix memory leak in changes method
++
++Upstream: https://git.openwrt.org/project/uci/commit/?id=19ceff323f1e2e7df26031a9fae29fff2edc65bd
++---
++ lua/uci.c | 17 +++++++++--------
++ 1 file changed, 9 insertions(+), 8 deletions(-)
++
++--- a/lua/uci.c
+++++ b/lua/uci.c
++@@ -877,16 +877,17 @@ uci_lua_changes(lua_State *L)
++ 	lua_newtable(L);
++ 	if (package) {
++ 		uci_lua_changes_pkg(L, ctx, package);
++-	} else {
++-		if (uci_list_configs(ctx, &config) != 0)
++-			goto done;
++-
++-		for(i = 0; config[i] != NULL; i++) {
++-			uci_lua_changes_pkg(L, ctx, config[i]);
++-		}
+++		return 1;
++ 	}
++ 
++-done:
+++	if ((uci_list_configs(ctx, &config) != UCI_OK) || !config)
+++		return 1;
+++
+++	for (i = 0; config[i] != NULL; i++) {
+++		uci_lua_changes_pkg(L, ctx, config[i]);
+++	}
+++
+++	free(config);
++ 	return 1;
++ }
++ 
+diff --git a/package/system/uci/patches/110-lua-free-empty-set-buffer.patch b/package/system/uci/patches/110-lua-free-empty-set-buffer.patch
+new file mode 100644
+index 0000000..bdbb6a0
+--- /dev/null
++++ b/package/system/uci/patches/110-lua-free-empty-set-buffer.patch
+@@ -0,0 +1,24 @@
++From 39093f3b040df895da812e2932b55feeeb1201df Mon Sep 17 00:00:00 2001
++From: Petr Stetiar <ynezz@true.cz>
++Date: Mon, 4 Nov 2019 23:08:26 +0100
++Subject: lua: fix memory leak in set method
++
++Upstream: https://git.openwrt.org/project/uci/commit/?id=39093f3b040df895da812e2932b55feeeb1201df
++---
++ lua/uci.c | 4 +++-
++ 1 file changed, 3 insertions(+), 1 deletion(-)
++
++--- a/lua/uci.c
+++++ b/lua/uci.c
++@@ -617,8 +617,10 @@ uci_lua_set(lua_State *L)
++ 	case 4:
++ 		/* Format: uci.set("p", "s", "o", "v") */
++ 		if (lua_istable(L, nargs)) {
++-			if (lua_rawlen(L, nargs) < 1)
+++			if (lua_rawlen(L, nargs) < 1) {
+++				free(s);
++ 				return luaL_error(L, "Cannot set an uci option to an empty table value");
+++			}
++ 			lua_rawgeti(L, nargs, 1);
++ 			ptr.value = luaL_checkstring(L, -1);
++ 			lua_pop(L, 1);

@@ -1,0 +1,66 @@
+From: SBE1V1K maintainers
+Subject: [PATCH] luci: normalize RPC URLs and preserve usable package controls
+
+Fix regressions observed during keep-settings and clean-device acceptance:
+normalize the ubus base path, avoid mixed-content reconnect probes, prevent
+package actions from wrapping, and include package releases in cache keys.
+
+diff --git a/modules/luci-base/htdocs/luci-static/resources/rpc.js b/modules/luci-base/htdocs/luci-static/resources/rpc.js
+--- a/modules/luci-base/htdocs/luci-static/resources/rpc.js
++++ b/modules/luci-base/htdocs/luci-static/resources/rpc.js
+@@ -388,3 +388,3 @@
+ 	setBaseURL: function(url) {
+-		rpcBaseURL = url;
++		rpcBaseURL = url.replace(/\/+$/, '');
+ 	},
+diff --git a/modules/luci-base/htdocs/luci-static/resources/ui.js b/modules/luci-base/htdocs/luci-static/resources/ui.js
+--- a/modules/luci-base/htdocs/luci-static/resources/ui.js
++++ b/modules/luci-base/htdocs/luci-static/resources/ui.js
+@@ -3877,11 +3877,12 @@
+ 	awaitReconnect: function(/* ... */) {
+ 		var ipaddrs = arguments.length ? arguments : [ window.location.host ];
++		var protocols = window.location.protocol == 'https:' ? [ 'https' ] : [ 'http', 'https' ];
+ 
+ 		window.setTimeout(L.bind(function() {
+ 			poll.add(L.bind(function() {
+ 				var tasks = [], reachable = false;
+ 
+-				for (var i = 0; i < 2; i++)
++				for (var i = 0; i < protocols.length; i++)
+ 					for (var j = 0; j < ipaddrs.length; j++)
+-						tasks.push(this.pingDevice(i ? 'https' : 'http', ipaddrs[j])
++						tasks.push(this.pingDevice(protocols[i], ipaddrs[j])
+ 							.then(function(ev) { reachable = ev.target.src.replace(/^(https?:\/\/[^\/]+).*$/, '$1/') }, function() {}));
+diff --git a/applications/luci-app-opkg/luasrc/view/opkg.htm b/applications/luci-app-opkg/luasrc/view/opkg.htm
+--- a/applications/luci-app-opkg/luasrc/view/opkg.htm
++++ b/applications/luci-app-opkg/luasrc/view/opkg.htm
+@@ -51,6 +51,17 @@
+ 	.td.size {
+ 		white-space: nowrap;
+ 	}
+ 
++	#packages .td:last-child > .btn {
++		white-space: nowrap;
++	}
++
++	@media (max-width: 900px) {
++		#packages .td.version {
++			white-space: normal;
++			overflow-wrap: anywhere;
++		}
++	}
++
+ 	ul.deps, ul.deps ul, ul.errors {
+ 		margin-left: 1em;
+diff --git a/luci.mk b/luci.mk
+--- a/luci.mk
++++ b/luci.mk
+@@ -192,6 +192,6 @@
+ define SubstituteVersion
+ 	$(FIND) $(1) -type f -name '*.htm' | while read src; do \
+-		$(SED) 's/<%# *\([^ ]*\)PKG_VERSION *%>/\1$(PKG_VERSION)/g' \
+-		    -e 's/"\(<%= *\(media\|resource\) *%>[^"]*\.\(js\|css\)\)"/"\1?v=$(PKG_VERSION)"/g' \
++		$(SED) 's/<%# *\([^ ]*\)PKG_VERSION *%>/\1$(PKG_VERSION)-r$(PKG_RELEASE)/g' \
++		    -e 's/"\(<%= *\(media\|resource\) *%>[^"]*\.\(js\|css\)\)"/"\1?v=$(PKG_VERSION)-r$(PKG_RELEASE)"/g' \
+ 			"$$$$src"; \
+ 	done

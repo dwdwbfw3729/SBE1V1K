@@ -1,0 +1,5 @@
+#!/bin/sh
+# SBE1V1K cannot remove external power in software.  The factory implementation
+# also performs retired vendor accounting, so this command fails closed.
+echo 'poweroff is unsupported on SBE1V1K; use reboot or disconnect power' >&2
+exit 1

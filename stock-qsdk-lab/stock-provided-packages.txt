@@ -1,0 +1,84 @@
+# Verified in the stock SBE1V1K 1.1.3.1 SquashFS.  These must not be replaced
+# by generic OpenWrt packages because stock QSDK daemons use their ABI.
+libc
+
+# Exact Linux 5.4.213 QSDK modules already present in /lib/modules/5.4.213.
+# In particular, these entries prevent the resolver from pulling 4.14 kmods.
+kmod-ppp
+kmod-pppoe
+kmod-fuse
+kmod-scsi-core
+kmod-usb-storage
+kmod-usb-storage-uas
+kmod-ipt-ipset
+kmod-iptunnel
+kmod-udptunnel4
+kmod-udptunnel6
+kmod-vxlan
+
+# Toolchain/runtime and stock QSDK core libraries.
+libgcc1
+libpthread
+librt
+libatomic1
+libubox20191228
+libubus20210603
+libuci20130104
+libblobmsg-json
+libjson-script
+libjson-c2
+libnl-tiny
+libmnl0
+libnfnetlink0
+libnetfilter-conntrack3
+libipset13
+
+# Factory userland is newer than the 19.07 feed but keeps the required SONAMEs:
+# curl 7.80.0/OpenSSL 1.1.1q, ncurses 6.1, zlib 1.2.11 and libuv.so.1.  Reuse
+# them instead of downgrading or overwriting shared libs.  The factory
+# libblkid.so.1 and its three local tools are retained byte-for-byte; the board
+# has no exposed USB connector and no generic mounting UI is added.
+ca-bundle
+jsonfilter
+curl
+libcurl4
+# Actual HTTP/2 provider imported by the retained curl/libcurl ELF files.
+libnghttp2-14
+libopenssl1.1
+# Exact /lib/libustream-ssl.so bytes are verified against stock-baseline.env
+# before this dependency record is emitted.  This is the factory OpenSSL
+# ustream ABI, not a generic feed replacement.
+libustream-openssl20150806
+libblkid1
+zlib
+libuv1
+libncurses6
+terminfo
+
+# Factory ubox helpers include ubusd, mount_root, validate_data and kmodloader.
+# They must not be replaced with armvirt binaries.
+ubox
+ubusd
+
+# Core daemons and package manager owned by the stock QSDK base.
+ubus
+uci
+procd
+netifd
+# The factory netifd VXLAN handler and matching 5.4.213 QSDK modules are
+# present even though the factory opkg database omits their package records.
+vxlan
+firewall
+iptables
+ip6tables
+ipset
+libip4tc2
+libip6tc2
+libxtables12
+libuuid1
+libcap
+libelf
+ip-full
+resolveip
+opkg
+busybox

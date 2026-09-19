@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Compatibility entry point.  The stock actuator is private; every public
+# policy request must pass through sbe-led's lock and priority arbitration.
+
+manager=/usr/sbin/sbe-led
+
+case "${1:-}" in
+	internet)
+		[ "$#" -eq 2 ] || exit 2
+		case "$2" in
+			disconnect) exec "$manager" disconnected ;;
+			connecting) exec "$manager" connecting ;;
+			connected) exec "$manager" connected ;;
+			*) exit 2 ;;
+		esac
+		;;
+	upgrade)
+		[ "$#" -eq 1 ] || exit 2
+		exec "$manager" upgrade
+		;;
+	error)
+		[ "$#" -le 2 ] || exit 2
+		exec "$manager" error
+		;;
+	blue_on|blue_breath|blue_blink|white_on|white_breath|white_blink|\
+	yellow_on|yellow_breath|yellow_blink|green_on|green_breath|green_blink|\
+	red_on|red_breath|red_blink|purple_on|purple_breath|purple_blink|\
+	red_white_blink|alternate_blink|alternate_breath|all_off)
+		[ "$#" -eq 1 ] || exit 2
+		exec "$manager" "$1"
+		;;
+	*)
+		echo 'unsupported LED request' >&2
+		exit 2
+		;;
+esac

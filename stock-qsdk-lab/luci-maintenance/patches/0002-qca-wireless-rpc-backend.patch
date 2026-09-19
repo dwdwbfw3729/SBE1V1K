@@ -1,0 +1,341 @@
+From 5b01449e123b60f6424dcfc67f2db1d61baeab05 Mon Sep 17 00:00:00 2001
+From: SBE QSDK compatibility build <noreply@example.invalid>
+Date: Tue, 15 Sep 2026 07:59:50 +0800
+Subject: [PATCH] luci: add QCA legacy wireless RPC compatibility
+
+The QSDK qcawificfg80211 stack is driven by the legacy /sbin/wifi path, so netifd returns an empty network.wireless status object and Qualcomm hostapd does not implement upstream feature-probe flags.
+
+Recognize the paired vendor wireless scripts for the capabilities they configure, while leaving hostapd_cli detection unchanged. When and only when netifd status is empty and UCI declares a qcawificfg80211 radio, merge the runtime UCI state and synthesize the standard radio/interface status consumed by LuCI. Validate runtime ifnames against live netdevs, publish up on both radio and interface objects, derive it from vendor state plus operstate, reuse the existing iwinfo enrichment, and publish validated per-band maximum channel widths from the QCA radio sysfs API. Give the changed rpcd module an explicit package release so opkg can distinguish it from the stock build.
+---
+ libs/rpcd-mod-luci/Makefile                  |   1 +
+ libs/rpcd-mod-luci/src/luci.c                | 263 +++++++++++++++++++
+ modules/luci-base/root/usr/libexec/rpcd/luci |   4 +
+ 3 files changed, 268 insertions(+)
+
+diff --git a/libs/rpcd-mod-luci/Makefile b/libs/rpcd-mod-luci/Makefile
+index 8833bb45ca1f30f7ca47c31625c1aec591ead12e..ac7ca9a9e77b5c4603150240a075708a00c469f3 100644
+--- a/libs/rpcd-mod-luci/Makefile
++++ b/libs/rpcd-mod-luci/Makefile
+@@ -8,6 +8,7 @@ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=rpcd-mod-luci
+ PKG_VERSION:=20201107
++PKG_RELEASE:=2
+ PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>
+ 
+ PKG_LICENSE:=Apache-2.0
+
+diff --git a/libs/rpcd-mod-luci/src/luci.c b/libs/rpcd-mod-luci/src/luci.c
+index 3f2c5f9..f2c6af5 100644
+--- a/libs/rpcd-mod-luci/src/luci.c
++++ b/libs/rpcd-mod-luci/src/luci.c
+@@ -998,15 +998,277 @@ static bool rpc_luci_get_iwinfo(struct blob_buf *buf, const char *devname,
+ 	return true;
+ }
+ 
++static bool
++rpc_luci_qca_uci_bool(struct uci_context *uci, struct uci_section *section,
++                      const char *option)
++{
++	const char *value = uci_lookup_option_string(uci, section, option);
++
++	return value && !strcmp(value, "1");
++}
++
++static const char *
++rpc_luci_qca_real_ifname(struct uci_context *uci, struct uci_section *section)
++{
++	const char *ifname = uci_lookup_option_string(uci, section, "ifname");
++
++	if (!ifname || !*ifname || strnlen(ifname, IFNAMSIZ) >= IFNAMSIZ)
++		return NULL;
++
++	return if_nametoindex(ifname) ? ifname : NULL;
++}
++
++static bool
++rpc_luci_qca_ifname_up(const char *ifname)
++{
++	const char *state = readstr("/sys/class/net/%s/operstate", ifname);
++
++	return !strcmp(state, "up") || !strcmp(state, "unknown");
++}
++
++static unsigned int
++rpc_luci_qca_max_width_value(const char *value)
++{
++	char *end;
++	unsigned long width;
++
++	if (!value || !*value)
++		return 0;
++
++	width = strtoul(value, &end, 10);
++	if (*end)
++		return 0;
++
++	switch (width) {
++	case 20:
++	case 40:
++	case 80:
++	case 160:
++	case 320:
++		return width;
++	default:
++		return 0;
++	}
++}
++
++static void
++rpc_luci_qca_add_max_widths(struct blob_buf *buf, const char *ifname)
++{
++	static const char * const bands[] = { "2g", "5g", "6g" };
++	const char *value;
++	unsigned int width;
++	size_t i;
++	void *widths;
++
++	if (!ifname || !*ifname || strnlen(ifname, IFNAMSIZ) >= IFNAMSIZ ||
++	    !if_nametoindex(ifname))
++		return;
++
++	widths = blobmsg_open_table(buf, "qca_max_widths");
++
++	for (i = 0; i < ARRAY_SIZE(bands); i++) {
++		value = readstr("/sys/class/net/%s/%s_maxchwidth", ifname,
++		                bands[i]);
++		width = rpc_luci_qca_max_width_value(value);
++		if (width)
++			blobmsg_add_u32(buf, bands[i], width);
++	}
++
++	blobmsg_close_table(buf, widths);
++}
++
++static void
++rpc_luci_qca_add_uci_option(struct blob_buf *buf, struct uci_context *uci,
++                            struct uci_section *section, const char *name)
++{
++	struct uci_element *element;
++	struct uci_option *option;
++	void *array;
++
++	option = uci_lookup_option(uci, section, name);
++	if (!option)
++		return;
++
++	if (option->type == UCI_TYPE_STRING) {
++		blobmsg_add_string(buf, name, option->v.string);
++	}
++	else if (option->type == UCI_TYPE_LIST) {
++		array = blobmsg_open_array(buf, name);
++
++		uci_foreach_element(&option->v.list, element)
++			blobmsg_add_string(buf, NULL, element->name);
++
++		blobmsg_close_array(buf, array);
++	}
++}
++
++static void
++rpc_luci_qca_add_uci_config(struct blob_buf *buf, struct uci_context *uci,
++                            struct uci_section *section, bool radio)
++{
++	static const char * const radio_options[] = {
++		"type", "phy", "channel", "hwmode", "htmode", "country",
++		"txpower", "disabled"
++	};
++	static const char * const interface_options[] = {
++		"mode", "ssid", "mesh_id", "bssid", "network", "encryption",
++		"disabled", "isolate", "hidden", "wds"
++	};
++	const char * const *options;
++	size_t count, i;
++	void *config;
++
++	if (radio) {
++		options = radio_options;
++		count = ARRAY_SIZE(radio_options);
++	}
++	else {
++		options = interface_options;
++		count = ARRAY_SIZE(interface_options);
++	}
++
++	config = blobmsg_open_table(buf, "config");
++
++	for (i = 0; i < count; i++)
++		rpc_luci_qca_add_uci_option(buf, uci, section, options[i]);
++
++	blobmsg_close_table(buf, config);
++}
++
++static bool
++rpc_luci_qca_radio(struct uci_context *uci, struct uci_section *section)
++{
++	const char *type;
++
++	if (strcmp(section->type, "wifi-device"))
++		return false;
++
++	type = uci_lookup_option_string(uci, section, "type");
++
++	return type && !strcmp(type, "qcawificfg80211");
++}
++
++static bool
++rpc_luci_add_qca_wireless_status(struct blob_buf *buf)
++{
++	struct uci_package *wireless = NULL;
++	struct uci_element *radio_element, *interface_element;
++	struct uci_section *radio, *interface;
++	struct uci_context *uci;
++	const char *device, *ifname, *first_ifname;
++	bool found = false, radio_up, interface_up;
++	void *radio_table, *interfaces, *interface_table;
++
++	uci = uci_alloc_context();
++	if (!uci)
++		return false;
++
++	if (uci_set_confdir(uci, "/etc/config") != UCI_OK ||
++	    uci_set_savedir(uci, "/tmp/state") != UCI_OK ||
++	    uci_load(uci, "wireless", &wireless) != UCI_OK)
++		goto out;
++
++	uci_foreach_element(&wireless->sections, radio_element) {
++		radio = uci_to_section(radio_element);
++
++		if (rpc_luci_qca_radio(uci, radio)) {
++			found = true;
++			break;
++		}
++	}
++
++	if (!found)
++		goto out;
++
++	uci_foreach_element(&wireless->sections, radio_element) {
++		radio = uci_to_section(radio_element);
++		if (!rpc_luci_qca_radio(uci, radio))
++			continue;
++
++		radio_table = blobmsg_open_table(buf, radio->e.name);
++		blobmsg_add_u8(buf, "pending", 0);
++		blobmsg_add_u8(buf, "autostart",
++		               !rpc_luci_qca_uci_bool(uci, radio, "disabled"));
++		blobmsg_add_u8(buf, "disabled",
++		               rpc_luci_qca_uci_bool(uci, radio, "disabled"));
++		rpc_luci_qca_add_uci_config(buf, uci, radio, true);
++
++		interfaces = blobmsg_open_array(buf, "interfaces");
++		first_ifname = NULL;
++		radio_up = false;
++
++		uci_foreach_element(&wireless->sections, interface_element) {
++			interface = uci_to_section(interface_element);
++			if (strcmp(interface->type, "wifi-iface"))
++				continue;
++
++			device = uci_lookup_option_string(uci, interface, "device");
++			if (!device || strcmp(device, radio->e.name))
++				continue;
++
++			interface_table = blobmsg_open_table(buf, NULL);
++			blobmsg_add_string(buf, "section", interface->e.name);
++
++			ifname = rpc_luci_qca_real_ifname(uci, interface);
++			interface_up = ifname &&
++				rpc_luci_qca_uci_bool(uci, interface, "up") &&
++				!rpc_luci_qca_uci_bool(uci, interface, "disabled") &&
++				rpc_luci_qca_ifname_up(ifname);
++			blobmsg_add_u8(buf, "up", interface_up);
++
++			if (ifname) {
++				blobmsg_add_string(buf, "ifname", ifname);
++
++				if (rpc_luci_get_iwinfo(buf, ifname, false) &&
++				    !first_ifname)
++					first_ifname = ifname;
++			}
++
++			radio_up = radio_up || interface_up;
++			rpc_luci_qca_add_uci_config(buf, uci, interface, false);
++			blobmsg_close_table(buf, interface_table);
++		}
++
++		blobmsg_close_array(buf, interfaces);
++		blobmsg_add_u8(buf, "up",
++		               radio_up &&
++		               !rpc_luci_qca_uci_bool(uci, radio, "disabled"));
++
++		rpc_luci_get_iwinfo(buf,
++		                    first_ifname ? first_ifname : radio->e.name,
++		                    true);
++		rpc_luci_qca_add_max_widths(buf, radio->e.name);
++		blobmsg_close_table(buf, radio_table);
++	}
++
++out:
++	if (wireless)
++		uci_unload(uci, wireless);
++
++	uci_free_context(uci);
++
++	return found;
++}
++
++static bool
++rpc_luci_wireless_status_empty(struct blob_attr *msg)
++{
++	return msg && blobmsg_data_len(msg) == 0;
++}
++
+ static void rpc_luci_get_wireless_devices_cb(struct ubus_request *req,
+                                              int type, struct blob_attr *msg)
+ {
+ 	struct blob_attr *wifi, *cur, *iface, *cur2;
+ 	struct reply_context *rctx = req->priv;
+ 	const char *name, *first_ifname;
+ 	int rem, rem2, rem3, rem4;
+ 	void *o, *a, *o2;
+ 
++	if (rpc_luci_wireless_status_empty(msg) &&
++	    rpc_luci_add_qca_wireless_status(&rctx->blob))
++		goto done;
++
+ 	blob_for_each_attr(wifi, msg, rem) {
+ 		if (blobmsg_type(wifi) != BLOBMSG_TYPE_TABLE ||
+ 		    blobmsg_name(wifi) == NULL)
+@@ -1070,6 +1332,7 @@ static void rpc_luci_get_wireless_devices_cb(struct ubus_request *req,
+ 		blobmsg_close_table(&rctx->blob, o);
+ 	}
+ 
++done:
+ 	finish_request(rctx, UBUS_STATUS_OK);
+ }
+ 
+diff --git a/modules/luci-base/root/usr/libexec/rpcd/luci b/modules/luci-base/root/usr/libexec/rpcd/luci
+index 35b85d4..3711e32 100755
+--- a/modules/luci-base/root/usr/libexec/rpcd/luci
++++ b/modules/luci-base/root/usr/libexec/rpcd/luci
+@@ -205,6 +205,9 @@ local methods = {
+ 			local fs = require "nixio.fs"
+ 			local rv = {}
+ 			local ok, fd
++			local qca_hostapd =
++				fs.access("/lib/wifi/qcawificfg80211.sh") and
++				fs.access("/lib/wifi/hostapd.sh")
+ 
+ 			rv.firewall      = fs.access("/sbin/fw3")
+ 			rv.opkg          = fs.access("/bin/opkg")
+@@ -227,6 +230,7 @@ local methods = {
+ 				local _, feature
+ 				for _, feature in ipairs(wifi_features) do
+ 					rv.hostapd[feature] =
++						qca_hostapd or
+ 						(os.execute(string.format("/usr/sbin/hostapd -v%s >/dev/null 2>/dev/null", feature)) == 0)
+ 				end
+ 			end
+-- 
+2.54.0 (Apple Git-157)

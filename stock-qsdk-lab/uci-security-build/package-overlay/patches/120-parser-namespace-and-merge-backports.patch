@@ -1,0 +1,65 @@
+From: OpenWrt uci upstream (security backport bundle)
+Subject: [PATCH] preserve merge pointer and reject dotted config names
+
+Backport-of: 3cda25127b1963ae7167e8a01a7bcacc7c89c29c
+Backport-of: 10f7996ec29449915640acca5d65b592365a4b14
+
+--- a/file.c
++++ b/file.c
+@@ -459,7 +459,7 @@ static void uci_parse_config(struct uci_context *ctx)
+ 
+ 		ctx->internal = !pctx->merge;
+ 		UCI_NESTED(uci_set, ctx, &ptr);
+-		pctx->section = uci_to_section(ptr.last);
++		pctx->section = ptr.s;
+ 	}
+ }
+ 
+@@ -831,15 +831,22 @@ done:
+  * after the last '/' character. By checking for a non-'\0'
+  * character afterwards, directories are ignored (glob marks
+  * those with a trailing '/'
++ * Filename with '.' are ignored and not parsed. Uci doesn't
++ * permit config files with '.' in the name and cause parsing
++ * problems.
+  */
+ static inline char *get_filename(char *path)
+ {
+ 	char *p;
+ 
+ 	p = strrchr(path, '/');
+ 	p++;
+ 	if (!*p)
+ 		return NULL;
++
++	if (strrchr(p, '.'))
++		return NULL;
++
+ 	return p;
+ }
+ 
+--- a/test/tests.d/090_cli_options
++++ b/test/tests.d/090_cli_options
+@@ -11,8 +11,9 @@ test_get_common()
+ 	# save new changes in "$new_savedir"
+ 	mkdir -p "$new_savedir"
+ 	touch "$new_savedir/delta"
+-	$UCI -P "$new_savedir" set delta.sec0=sectype
++	$UCI -P "$new_savedir" set delta.sec0=tmptype
+ 	$UCI -P "$new_savedir" add_list delta.sec0.li0=1
++	$UCI -P "$new_savedir" set delta.sec0=sectype
+ 
+ 	assertEquals "delta.sec0='sectype'
+ delta.sec0.li0+='0'" "$($UCI changes)"
+@@ -22,8 +23,9 @@ delta.sec0.li0+='0'" "$($UCI changes)"
+ 	assertTrue "$?"
+ 	assertEquals "delta.sec0='sectype'
+ delta.sec0.li0+='0'
+-delta.sec0='sectype'
+-delta.sec0.li0+='1'" "$cmdoutput"
++delta.sec0='tmptype'
++delta.sec0.li0+='1'
++delta.sec0='sectype'" "$cmdoutput"
+ 
+ 	# check combined export.  Order matters here.
+ 	cmdoutput="$($UCI -P "$new_savedir" export)"

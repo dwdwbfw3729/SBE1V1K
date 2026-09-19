@@ -1,0 +1,3 @@
+# sha256	path relative to the locked QSDK root	semantic
+b46ac69fe414b4b501f38ca28115afec45c4fae44c4f273a700980a2f3784ef2	qsdk-package/package/utils/lua/patches/0001-lua-CVE-2014-5461-possible-code-exec-via-overflow-in.patch	target-CVE-2014-5461
+b46ac69fe414b4b501f38ca28115afec45c4fae44c4f273a700980a2f3784ef2	qsdk-package/package/utils/lua/patches-host/0001-lua-CVE-2014-5461-possible-code-exec-via-overflow-in.patch	host-CVE-2014-5461

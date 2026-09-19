@@ -1,0 +1,6 @@
+# scope	status	reason
+liblua5.1.5+lua	candidate-after-clean-A-B	binding-independent Lua 5.1 ABI security backports
+libubus-lua	blocked-native-core	final rootfs libubus.so.20210603 still lacks locked post-baseline memory/resource/FD_CLOEXEC fixes
+libuci-lua	blocked-native-core	final rootfs libuci.so still lacks binding-reachable parser use-after-realloc fixes
+libiwinfo20181126+libiwinfo-lua	blocked-transitive-core	both link final libuci.so and libubus.so.20210603; keep group atomic
+six-runtime-plus-luci	blocked	must first source-build and ABI-audit native libuci20130104 plus libubus20210603 with their bindings/consumers

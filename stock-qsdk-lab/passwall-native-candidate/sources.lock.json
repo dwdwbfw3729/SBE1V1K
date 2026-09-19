@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/Openwrt-Passwall/openwrt-passwall",
+  "tag": "26.9.9-1",
+  "commit": "92714cdb2eb613fbab195f8b6005b9b1d9843294",
+  "archive": "../passwall-build-v2/distfiles/openwrt-passwall-26.9.9-1.tar.gz",
+  "archive_sha256": "36cd93255e5760f830fa972dc11a304f12dde9ce6ab32be64ebcca35651a819b",
+  "archive_prefix": "openwrt-passwall-26.9.9-1/luci-app-passwall/",
+  "source_date_epoch": 1788883544,
+  "xray_binary": "../passwall-build-v2/out/xray-26.3.27-linux-arm64",
+  "xray_version": "26.3.27-1",
+  "shadowsocks_rust_archive": "distfiles/shadowsocks-v1.21.2.aarch64-unknown-linux-musl.tar.xz",
+  "shadowsocks_rust_archive_url": "https://github.com/shadowsocks/shadowsocks-rust/releases/download/v1.21.2/shadowsocks-v1.21.2.aarch64-unknown-linux-musl.tar.xz",
+  "shadowsocks_rust_archive_sha256": "19e11f39a1b1cd6f843d2d1b5e7759d557448bc82017ff87b9cfaeeff9814f8f",
+  "shadowsocks_rust_version": "1.21.2-1",
+  "sing_box_archive": "distfiles/sing-box-1.14.1-linux-arm64-musl.tar.gz",
+  "sing_box_archive_url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.1/sing-box-1.14.1-linux-arm64-musl.tar.gz",
+  "sing_box_archive_sha256": "d94fc9704372ca2fa2854e54c20b406e4b8779b5ccdd0c557da90ea9344e9631",
+  "sing_box_version": "1.14.1-1"
+}

@@ -1,0 +1,5 @@
+#!/bin/sh
+# SBE1V1K has no audited software-halt path.  The factory implementation also
+# performs retired vendor accounting, so this command fails closed.
+echo 'halt is unsupported on SBE1V1K; use reboot or disconnect power' >&2
+exit 1

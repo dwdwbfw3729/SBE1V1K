@@ -1,0 +1,17 @@
+#!/bin/sh
+
+[ "${ACTION:-}" = released ] || exit 0
+seen=${SEEN:-0}
+case "$seen" in
+	''|*[!0-9]*) seen=0 ;;
+esac
+
+if [ "$seen" -ge 9 ]; then
+	/usr/sbin/sbe-led reset >/dev/null 2>&1 || true
+	# The helper proves that /overlay is the dedicated p30 filesystem before it
+	# creates a transactional-reset marker.  RAM trial/fallback modes refuse.
+	/usr/sbin/sbe-overlay-reset >/dev/null 2>&1 || \
+		logger -t sbe-reset "factory reset request refused outside persistent p30 mode"
+fi
+
+reboot

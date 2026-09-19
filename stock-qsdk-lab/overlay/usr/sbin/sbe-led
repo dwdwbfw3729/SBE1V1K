@@ -1,0 +1,284 @@
+#!/bin/sh
+
+# Serialize all LED requests and keep high-priority hardware/maintenance
+# indications from being overwritten by ordinary WAN hotplug events.  Claim
+# files live only in /var/run, so a reboot always clears stale indications.
+
+functions_library=${SBE_FUNCTIONS_LIBRARY:-/lib/functions.sh}
+. "$functions_library"
+
+umask 077
+
+state_dir=${SBE_LED_STATE_DIR:-/var/run/sbe-hardware}
+state_file=$state_dir/led.state
+base_file=$state_dir/led.base
+claim_dir=$state_dir/led-claims
+lock_dir=$state_dir/led.lock
+timeout_bin=${SBE_TIMEOUT_BIN:-/usr/bin/timeout}
+led_ctl_bin=${SBE_LED_CTL_BIN:-/usr/libexec/sbe-led-ctl-real}
+ifstatus_bin=${SBE_IFSTATUS_BIN:-/sbin/ifstatus}
+lock_held=0
+
+valid_pattern() {
+	case "$1" in
+		blue_on|blue_breath|blue_blink|white_on|white_breath|white_blink|\
+		yellow_on|yellow_breath|yellow_blink|green_on|green_breath|green_blink|\
+		red_on|red_breath|red_blink|purple_on|purple_breath|purple_blink|\
+		red_white_blink|alternate_blink|alternate_breath|all_off) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+valid_state() {
+	case "$1" in
+		ready|connecting|connected|disconnected|reset|upgrade|error) return 0 ;;
+	esac
+	valid_pattern "$1"
+}
+
+valid_claim() {
+	case "$1" in
+		error|thermal|upgrade|reset) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+prepare_state_dir() {
+	[ ! -L "$state_dir" ] || return 1
+	mkdir -p "$state_dir" 2>/dev/null || return 1
+	[ -d "$state_dir" ] && [ ! -L "$state_dir" ] && [ -O "$state_dir" ] || return 1
+	chmod 700 "$state_dir" 2>/dev/null || return 1
+
+	[ ! -L "$claim_dir" ] || return 1
+	mkdir -p "$claim_dir" 2>/dev/null || return 1
+	[ -d "$claim_dir" ] && [ ! -L "$claim_dir" ] && [ -O "$claim_dir" ] || return 1
+	chmod 700 "$claim_dir" 2>/dev/null || return 1
+}
+
+read_token() {
+	local token_file="$1" token_value
+	[ -f "$token_file" ] && [ ! -L "$token_file" ] && [ -O "$token_file" ] || return 1
+	[ "$(wc -c < "$token_file" 2>/dev/null)" -le 64 ] 2>/dev/null || return 1
+	[ "$(wc -l < "$token_file" 2>/dev/null)" -eq 1 ] 2>/dev/null || return 1
+	token_value=$(cat "$token_file" 2>/dev/null) || return 1
+	case "$token_value" in
+		''|*[!A-Za-z0-9_-]*) return 1 ;;
+	esac
+	printf '%s\n' "$token_value"
+}
+
+write_token() {
+	local token_file="$1" token_value="$2" token_tmp
+	token_tmp="$token_file.$$"
+	[ ! -e "$token_tmp" ] && [ ! -L "$token_tmp" ] || return 1
+	printf '%s\n' "$token_value" > "$token_tmp" || {
+		rm -f "$token_tmp"
+		return 1
+	}
+	chmod 600 "$token_tmp" || {
+		rm -f "$token_tmp"
+		return 1
+	}
+	mv -f "$token_tmp" "$token_file" || {
+		rm -f "$token_tmp"
+		return 1
+	}
+}
+
+release_lock() {
+	local owner
+	[ "$lock_held" = 1 ] || return 0
+	owner=$(read_token "$lock_dir/pid" 2>/dev/null || true)
+	if [ "$owner" = "$$" ]; then
+		rm -f "$lock_dir/pid"
+		rmdir "$lock_dir" 2>/dev/null || true
+	fi
+	lock_held=0
+}
+
+acquire_lock() {
+	local attempt=0 owner
+	while ! mkdir "$lock_dir" 2>/dev/null; do
+		[ ! -L "$lock_dir" ] || return 1
+		[ -d "$lock_dir" ] && [ -O "$lock_dir" ] || return 1
+		owner=$(read_token "$lock_dir/pid" 2>/dev/null || true)
+		case "$owner" in
+			''|*[!0-9]*) ;;
+			*) kill -0 "$owner" 2>/dev/null && {
+				attempt=$((attempt + 1))
+				[ "$attempt" -lt 5 ] || return 1
+				sleep 1
+				continue
+			} ;;
+		esac
+		rm -f "$lock_dir/pid" 2>/dev/null || return 1
+		rmdir "$lock_dir" 2>/dev/null || return 1
+	done
+	chmod 700 "$lock_dir" || {
+		rmdir "$lock_dir" 2>/dev/null || true
+		return 1
+	}
+	printf '%s\n' "$$" > "$lock_dir/pid" || {
+		rmdir "$lock_dir" 2>/dev/null || true
+		return 1
+	}
+	chmod 600 "$lock_dir/pid" || {
+		rm -f "$lock_dir/pid"
+		rmdir "$lock_dir" 2>/dev/null || true
+		return 1
+	}
+	lock_held=1
+}
+
+default_pattern() {
+	case "$1" in
+		ready|connected) printf '%s\n' blue_on ;;
+		connecting) printf '%s\n' blue_breath ;;
+		disconnected) printf '%s\n' red_blink ;;
+		reset) printf '%s\n' red_white_blink ;;
+		upgrade) printf '%s\n' alternate_breath ;;
+		error) printf '%s\n' red_on ;;
+		*) return 1 ;;
+	esac
+}
+
+pattern_for_state() {
+	local logical="$1" fallback selected
+	if valid_pattern "$logical"; then
+		printf '%s\n' "$logical"
+		return 0
+	fi
+	fallback=$(default_pattern "$logical") || return 1
+	config_get selected status "$logical" "$fallback"
+	valid_pattern "$selected" || return 1
+	printf '%s\n' "$selected"
+}
+
+resolve_ready() {
+	local logical="$1"
+	[ "$logical" = ready ] || {
+		printf '%s\n' "$logical"
+		return 0
+	}
+	config_get_bool track_wan status track_wan 1
+	[ "$track_wan" = 1 ] || {
+		printf '%s\n' ready
+		return 0
+	}
+	if "$timeout_bin" 3 "$ifstatus_bin" wan 2>/dev/null | grep -q '"up": true'; then
+		printf '%s\n' connected
+	else
+		printf '%s\n' connecting
+	fi
+}
+
+write_state() {
+	local state_value="$1" pattern_value="$2" source_value="$3" base_value="$4" state_tmp
+	state_tmp="$state_file.$$"
+	[ ! -e "$state_tmp" ] && [ ! -L "$state_tmp" ] || return 1
+	{
+		printf 'state=%s\n' "$state_value"
+		printf 'pattern=%s\n' "$pattern_value"
+		printf 'source=%s\n' "$source_value"
+		printf 'base_state=%s\n' "$base_value"
+	} > "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	chmod 600 "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	mv -f "$state_tmp" "$state_file" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+}
+
+prepare_state_dir || exit 1
+acquire_lock || exit 1
+trap 'release_lock' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+config_load sbe-hardware
+command=${1:-ready}
+case "$command" in
+	claim)
+		[ "$#" -eq 3 ] || exit 2
+		claim=$2
+		requested=$3
+		valid_claim "$claim" && valid_state "$requested" || exit 2
+		write_token "$claim_dir/$claim" "$requested" || exit 1
+		;;
+	release)
+		[ "$#" -eq 2 ] || exit 2
+		claim=$2
+		valid_claim "$claim" || exit 2
+		claim_file="$claim_dir/$claim"
+		[ ! -L "$claim_file" ] || exit 1
+		rm -f "$claim_file" || exit 1
+		;;
+	reset|upgrade|error)
+		[ "$#" -eq 1 ] || exit 2
+		write_token "$claim_dir/$command" "$command" || exit 1
+		;;
+	*)
+		[ "$#" -le 1 ] || exit 2
+		valid_state "$command" || exit 2
+		write_token "$base_file" "$command" || exit 1
+		;;
+esac
+
+base_state=$(read_token "$base_file" 2>/dev/null || true)
+if ! valid_state "$base_state"; then
+	base_state=ready
+	write_token "$base_file" "$base_state" || exit 1
+fi
+
+effective_state=
+source=base
+# Highest to lowest priority: an explicit hardware error, thermal protection,
+# upgrade, reset, and finally the ordinary WAN/base state.
+for claim in error thermal upgrade reset; do
+	claim_file="$claim_dir/$claim"
+	[ -e "$claim_file" ] || [ -L "$claim_file" ] || continue
+	requested=$(read_token "$claim_file" 2>/dev/null || true)
+	if ! valid_state "$requested"; then
+		effective_state=error
+		source="${claim}-invalid"
+		break
+	fi
+	effective_state=$requested
+	source=$claim
+	break
+done
+
+if [ -z "$effective_state" ]; then
+	effective_state=$(resolve_ready "$base_state") || exit 1
+fi
+
+config_get_bool enabled status enabled 1
+# The user-facing switch suppresses ordinary WAN/base illumination only.
+# Hardware faults and maintenance claims must stay visible so an LED-off
+# preference can never hide overheating, a failed fan, reset, or an upgrade.
+if [ "$enabled" != 1 ] && [ "$source" = base ]; then
+	"$timeout_bin" 5 "$led_ctl_bin" all_off >/dev/null 2>&1 || exit 1
+	write_state disabled all_off disabled "$base_state" || true
+	trap - EXIT HUP INT TERM
+	release_lock
+	exit 0
+fi
+
+pattern=$(pattern_for_state "$effective_state") || {
+	effective_state=error
+	source=config-invalid
+	pattern=$(pattern_for_state error) || pattern=red_on
+}
+
+"$timeout_bin" 5 "$led_ctl_bin" "$pattern" >/dev/null 2>&1 || exit 1
+write_state "$effective_state" "$pattern" "$source" "$base_state" ||
+	logger -t sbe-led 'physical LED changed but status publication failed'
+trap - EXIT HUP INT TERM
+release_lock

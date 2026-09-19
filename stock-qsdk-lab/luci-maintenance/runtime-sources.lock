@@ -1,0 +1,6 @@
+# Additional locks for the Lua/LuCI runtime dependency set.  The QSDK and
+# builder identities are inherited from sources.lock.
+RUNTIME_SOURCE_DATE_EPOCH=1725028544
+RUNTIME_PATCHSET_REVISION=1
+RUNTIME_FINAL_STATUS_SHA256=17be67a030f17facab77679ac83e50b2f6fc3923217964b64816a747e8ee0f9c
+RUNTIME_OPKG_CONF_SHA256=92f1acf81504ad60e9c8f41241e6f1024e6418e89eea899c52f7218f192902ab

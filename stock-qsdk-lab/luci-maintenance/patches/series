@@ -1,0 +1,13 @@
+# One patch filename per line, relative to this directory.
+0001-luci-mod-system-fix-ssh-key-delete-xss.patch
+0002-qca-wireless-rpc-backend.patch
+0003-qca-native-wireless-ui.patch
+0004-luci-mod-status-fix-realtime-graph-nan.patch
+0005-qca-wireless-country-selector.patch
+0006-bootstrap-link-qsdk-source.patch
+0007-qca-wireless-encryption-status.patch
+0008-luci-base-use-direct-ubus-endpoint.patch
+0009-sbe-hardware-i18n.patch
+0010-luci-mod-system-english-language-option.patch
+0011-luci-client-regressions.patch
+0012-diagnostics-address-family.patch

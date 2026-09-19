@@ -1,0 +1,60 @@
+From 8b5be570f13e49adf0ccc1c4fb77b0649992842d Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:06:59 +0200
+Subject: [PATCH] libubus-acl: fix dangling pointers on blob_memdup failure in
+ acl_recv_cb
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+blob_memdup() can return NULL under memory pressure. The old code cleared
+the ACL tree and freed acl_blob first, then called blob_memdup(). On
+failure the tree was empty and acl_blob was NULL, but acl_add() still
+ran and stored pointers into the transient 'msg' buffer — dangling
+pointers once the caller freed that buffer.
+
+Fix by allocating the new blob first. Only clear the old state after the
+allocation succeeds. Also parse from the stable acl_blob copy rather
+than from the transient 'msg' argument.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ libubus-acl.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/libubus-acl.c b/libubus-acl.c
+index aab6629..8f045ad 100644
+--- a/libubus-acl.c
++++ b/libubus-acl.c
+@@ -104,18 +104,22 @@ static void acl_recv_cb(struct ubus_request *req,
+ 	struct blob_attr *cur;
+ 	size_t rem;
+ 
++	struct blob_attr *new_blob = blob_memdup(msg);
++	if (!new_blob)
++		return;
++
+ 	if (acl_blob) {
+ 		struct acl_object *p, *q;
+ 
+ 		avl_for_each_element_safe(&acl_objects, p, avl, q) {
+ 			avl_delete(&acl_objects, &p->avl);
+ 			free(p);
+ 		}
+ 		free(acl_blob);
+ 	}
+-	acl_blob = blob_memdup(msg);
+-	blobmsg_parse(acl_policy, __ACL_POLICY_MAX, tb, blobmsg_data(msg),
+-		      blobmsg_data_len(msg));
++	acl_blob = new_blob;
++	blobmsg_parse(acl_policy, __ACL_POLICY_MAX, tb, blobmsg_data(acl_blob),
++		      blobmsg_data_len(acl_blob));
+ 
+ 	if (!tb[ACL_POLICY_SEQ] && !tb[ACL_POLICY_ACL])
+ 		return;
+-- 
+2.54.0 (Apple Git-157)
+
+

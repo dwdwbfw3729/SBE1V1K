@@ -1,0 +1,75 @@
+From f92ffd289dcc07b20d0fcf34e10e5c685240e5bd Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Thu, 21 May 2026 23:45:59 +0200
+Subject: [PATCH] ubusd: use size_t for string and blob length variables
+
+strlen() and blob_raw_len() return size_t; storing their result in
+an int relies on an implicit narrowing conversion. Use size_t for
+the affected length variables in ubusd_alloc_event_pattern(),
+ubus_create_obj_method() and __ubusd_handle_lookup().
+
+ubusd_alloc_event_pattern() checked the length with "<= 0", which is
+only ever true for 0 once the variable is unsigned; replace it with
+"!len".
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_event.c | 4 ++--
+ ubusd_obj.c   | 2 +-
+ ubusd_proto.c | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/ubusd_event.c b/ubusd_event.c
+index 419c018..47d89ca 100644
+--- a/ubusd_event.c
++++ b/ubusd_event.c
+@@ -61,7 +61,7 @@ static int ubusd_alloc_event_pattern(struct ubus_client *cl, struct blob_attr *m
+ 	char *pattern, *name;
+ 	uint32_t id;
+ 	bool partial = false;
+-	int len;
++	size_t len;
+ 
+ 	if (!msg)
+ 		return UBUS_STATUS_INVALID_ARGUMENT;
+@@ -84,7 +84,7 @@ static int ubusd_alloc_event_pattern(struct ubus_client *cl, struct blob_attr *m
+ 	pattern = blobmsg_data(attr[EVREG_PATTERN]);
+ 
+ 	len = strlen(pattern);
+-	if (len <= 0)
++	if (!len)
+ 		return UBUS_STATUS_PERMISSION_DENIED;
+ 
+ 	if (pattern[len - 1] == '*') {
+diff --git a/ubusd_obj.c b/ubusd_obj.c
+index dd44882..6f274ce 100644
+--- a/ubusd_obj.c
++++ b/ubusd_obj.c
+@@ -37,7 +37,7 @@ static void ubus_unref_object_type(struct ubus_object_type *type)
+ static bool ubus_create_obj_method(struct ubus_object_type *type, struct blob_attr *attr)
+ {
+ 	struct ubus_method *m;
+-	int bloblen = blob_raw_len(attr);
++	size_t bloblen = blob_raw_len(attr);
+ 
+ 	m = calloc(1, sizeof(*m) + bloblen);
+ 	if (!m)
+diff --git a/ubusd_proto.c b/ubusd_proto.c
+index 92fbd55..cf955da 100644
+--- a/ubusd_proto.c
++++ b/ubusd_proto.c
+@@ -209,7 +209,7 @@ static int __ubusd_handle_lookup(struct ubus_client *cl,
+ 	struct ubus_object *obj = NULL;
+ 	char *objpath;
+ 	bool found = false;
+-	int len;
++	size_t len;
+ 
+ 	if (!attr[UBUS_ATTR_OBJPATH]) {
+ 		if (cmd)
+-- 
+2.54.0 (Apple Git-157)
+
+

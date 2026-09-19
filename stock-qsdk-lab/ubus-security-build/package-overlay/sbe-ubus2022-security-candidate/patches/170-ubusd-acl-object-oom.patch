@@ -1,0 +1,32 @@
+From 9105ea2a349a2f0de334e8b661baa76e21e47d13 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:07:13 +0200
+Subject: [PATCH] ubusd_acl: fix NULL dereference on OOM in ubusd_acl_alloc_obj
+
+calloc_a() can return NULL under memory pressure. The returned pointer
+was dereferenced immediately on the next line without a NULL check.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_acl.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/ubusd_acl.c b/ubusd_acl.c
+index a5429cd..ac47f5b 100644
+--- a/ubusd_acl.c
++++ b/ubusd_acl.c
+@@ -316,6 +316,8 @@ ubusd_acl_alloc_obj(struct ubusd_acl_file *file, const char *obj)
+ 	}
+ 
+ 	o = calloc_a(sizeof(*o), &k, len + 1);
++	if (!o)
++		return NULL;
+ 	o->partial = partial;
+ 	o->user = file->user;
+ 	o->group = file->group;
+-- 
+2.54.0 (Apple Git-157)
+
+

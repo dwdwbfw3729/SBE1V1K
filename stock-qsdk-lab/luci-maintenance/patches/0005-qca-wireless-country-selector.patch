@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: QSDK LuCI maintenance <noreply@localhost>
+Date: Tue, 15 Sep 2026 23:59:00 +0800
+Subject: [PATCH] luci-mod-network: improve QCA radio identity and country
+
+The QSDK iwinfo backend already implements countrylist and the vendor wireless
+scripts consume the standard wifi-device country option.  The native LuCI view
+hid the selector behind a mac80211-only branch, however, so qcawificfg80211
+users could not configure it.  Keep the mac80211-only tuning fields scoped as
+before while sharing the standard country selector with QCA radios.
+
+The legacy hardware mode list also renders Wi-Fi 7 QCA radios as generic
+802.11a/acn devices.  Derive a concise 2.4/5/6 GHz 802.11be label from the
+QSDK-native band, hwmode and width options without changing their backend.
+---
+ .../luci-static/resources/view/network/wireless.js | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+--- a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
++++ b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js
+@@ -110,8 +110,25 @@ function render_network_badge(radioNet) {
+ 		radioNet.getSignal(), radioNet.getNoise(), false, radioNet.getMode());
+ }
+ 
++function qcaRadioDisplayName(radioDev) {
++	var section = radioDev.getName(),
++	    type = uci.get('wireless', section, 'type');
++
++	if (!qcaWifiType(type))
++		return null;
++
++	var qca_band = String(uci.get('wireless', section, 'band') || ''),
++	    hwmode = String(uci.get('wireless', section, 'hwmode') || '').toLowerCase(),
++	    htmode = String(uci.get('wireless', section, 'htmode') || '').toUpperCase(),
++	    band = (qca_band == '3' || htmode == 'HT320') ? '6 GHz' :
++	           (/(?:^|11)(?:b|g|bg|ng|axg|beg)$/.test(hwmode) ? '2.4 GHz' : '5 GHz');
++
++	return 'Qualcomm QCA 802.11be (Wi-Fi 7) · %s'.format(band);
++}
++
+ function render_radio_status(radioDev, wifiNets) {
+-	var name = radioDev.getI18n().replace(/ Wireless Controller .+$/, ''),
++	var name = qcaRadioDisplayName(radioDev) ||
++	           radioDev.getI18n().replace(/ Wireless Controller .+$/, ''),
+ 	    node = E('div', [ E('big', {}, E('strong', {}, name)), E('div') ]),
+ 	    channel, frequency, bitrate;
+ 
+@@ -1135,10 +1135,14 @@ return view.extend({
+ 				if (hwtype == 'mac80211') {
+ 					o = ss.taboption('general', CBIWifiTxPowerValue, 'txpower', _('Maximum transmit power'), _('Specifies the maximum transmit power the wireless radio may use. Depending on regulatory requirements and wireless usage, the actual transmit power may be reduced by the driver.'));
+ 					o.wifiNetwork = radioNet;
++				}
+ 
++				if (hwtype == 'mac80211' || is_qca) {
+ 					o = ss.taboption('advanced', CBIWifiCountryValue, 'country', _('Country Code'));
+ 					o.wifiNetwork = radioNet;
++				}
+ 
++				if (hwtype == 'mac80211') {
+ 					o = ss.taboption('advanced', form.Flag, 'legacy_rates', _('Allow legacy 802.11b rates'));
+ 					o.default = o.enabled;
+ 
+-- 
+2.39.5

@@ -1,0 +1,45 @@
+{
+  "sbe-platform": {
+    "version": "1.0.3-1",
+    "description": "SBE1V1K QSDK platform, persistent overlay and service integration",
+    "depends": "busybox, procd, ubus, uci, ip-full, lua, sbe-upgrade-profile",
+    "conffiles": ["/etc/config/sbe-services", "/etc/passwd", "/etc/shadow", "/etc/group"],
+    "files": [
+      "etc/config/sbe-services", "etc/passwd", "etc/shadow", "etc/group", "etc/banner",
+      "lib/preinit/01_default_configs", "etc/init.d/network",
+      "etc/uci-defaults/50-dnsmasq-migrate-resolv-conf-auto.sh",
+      "etc/uci-defaults/51-sbe-dual-stack", "etc/uci-defaults/52-sbe-external-feed",
+      "etc/init.d/sbe-accel",
+      "etc/init.d/sbe-local-watchdog", "etc/init.d/sbe-overlay-commit",
+      "etc/init.d/sbe-random-seed", "etc/init.d/sbe-wireless-policy",
+      "lib/preinit/82_sbe_overlay_root", "lib/wifi/zz_sbe_lifecycle.sh",
+      "sbin/firstboot", "sbin/sysupgrade", "etc/rc.button/reset",
+      "usr/sbin/sbe-healthcheck", "usr/sbin/sbe-local-watchdog",
+      "usr/sbin/sbe-mbssid-policy", "usr/sbin/sbe-overlay-reset",
+      "usr/sbin/sbe-p30-audit", "usr/sbin/sbe-random-seed",
+      "usr/sbin/sbe-slot-confirm", "usr/sbin/sbe-wifi-lifecycle",
+      "usr/libexec/sbe-backup-validate", "usr/libexec/sbe-opkg-wrapper"
+    ]
+  },
+  "sbe-hardware": {
+    "version": "1.0.1-1",
+    "description": "SBE1V1K hardware status, thermal policy and RGB LED control",
+    "depends": "sbe-platform, jsonfilter, libuci-lua, luci-lib-jsonc, luci-lib-nixio",
+    "conffiles": ["/etc/config/sbe-hardware"],
+    "files": [
+      "etc/config/sbe-hardware", "etc/init.d/sbe-led", "etc/init.d/sbe-thermal-policy",
+      "etc/hotplug.d/button/50-sbe-reset-led", "etc/hotplug.d/iface/96-sbe-led",
+      "sbin/led_ctl", "usr/libexec/sbe-led-ctl-real",
+      "usr/sbin/sbe-led", "usr/sbin/sbe-status", "usr/sbin/sbe-thermal-policy"
+    ]
+  },
+  "luci-app-sbe-hardware": {
+    "version": "1.0.1-1",
+    "description": "LuCI hardware status and policy-based temperature and fan history",
+    "depends": "luci-base, luci-mod-system, sbe-hardware",
+    "files": [
+      "usr/share/rpcd/acl.d/sbe-status.json", "usr/share/luci/menu.d/sbe-status.json",
+      "www/luci-static/resources/view/status/sbe-hardware.js"
+    ]
+  }
+}

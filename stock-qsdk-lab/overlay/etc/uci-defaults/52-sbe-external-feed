@@ -1,0 +1,13 @@
+#!/bin/sh
+# A retained config may still reference the old built-in archive. Remove only
+# that exact source when the new image deliberately has no embedded repository.
+set -e
+grep -qx external /usr/share/sbe-build/feed-policy 2>/dev/null || exit 0
+[ ! -d /usr/share/sbe-feed ] || exit 0
+obsolete='^[[:space:]]*src/gz[[:space:]][[:space:]]*sbe_local[[:space:]][[:space:]]*file:///usr/share/sbe-feed[[:space:]]*$'
+for config in /etc/opkg.conf /etc/opkg/*.conf; do
+	[ -f "$config" ] || continue
+	grep -q "$obsolete" "$config" || continue
+	sed -i "\|$obsolete|d" "$config"
+done
+exit 0

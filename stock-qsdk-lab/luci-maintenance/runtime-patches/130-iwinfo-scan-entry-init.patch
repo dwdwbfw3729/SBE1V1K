@@ -1,0 +1,46 @@
+diff --git a/package/network/utils/iwinfo/Makefile b/package/network/utils/iwinfo/Makefile
+index 402f515..92d61f2 100644
+--- a/package/network/utils/iwinfo/Makefile
++++ b/package/network/utils/iwinfo/Makefile
+@@ -7,7 +7,7 @@
+ include $(TOPDIR)/rules.mk
+ 
+ PKG_NAME:=libiwinfo
+-PKG_RELEASE:=1
++PKG_RELEASE:=2
+ 
+ PKG_SOURCE_PROTO:=git
+ PKG_SOURCE_URL=$(PROJECT_GIT)/project/iwinfo.git
+diff --git a/package/network/utils/iwinfo/patches/100-init-wpactl-scan-entry.patch b/package/network/utils/iwinfo/patches/100-init-wpactl-scan-entry.patch
+new file mode 100644
+index 0000000..e48ad37
+--- /dev/null
++++ b/package/network/utils/iwinfo/patches/100-init-wpactl-scan-entry.patch
+@@ -0,0 +1,27 @@
++From 6e198d3757524570db96458cafb6ee085b366aca Mon Sep 17 00:00:00 2001
++From: James Haggerty <james.haggerty@morsemicro.com>
++Date: Wed, 22 Oct 2025 13:44:28 +1100
++Subject: nl80211: initialize wpa_supplicant scan entries
++
++Upstream: https://git.openwrt.org/project/iwinfo/commit/?id=6e198d3757524570db96458cafb6ee085b366aca
++
++Fields not populated by the wpa_supplicant scan parser retained bytes from
++the caller's buffer.  rpcd later used the stale channel-width values as
++array indexes and could segfault.  Initialize each accepted entry before
++parsing it.  This is the complete upstream source change rebased onto the
++locked 2019 iwinfo snapshot.
++---
++ iwinfo_nl80211.c | 2 ++
++ 1 file changed, 2 insertions(+)
++
++--- a/iwinfo_nl80211.c
+++++ b/iwinfo_nl80211.c
++@@ -2561,6 +2561,8 @@ static int nl80211_get_scanlist_wpactl(
++ 			if (!bssid || !freq || !signal || !flags)
++ 				continue;
++ 
+++			memset(e, 0, sizeof(*e));
+++
++ 			/* BSSID */
++ 			e->mac[0] = strtol(&bssid[0],  NULL, 16);
++ 			e->mac[1] = strtol(&bssid[3],  NULL, 16);

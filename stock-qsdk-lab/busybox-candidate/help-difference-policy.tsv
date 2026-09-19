@@ -1,0 +1,17 @@
+# applet<TAB>classification<TAB>reason
+[	upstream-version	BusyBox 1.37 treats --help as an operand for the bracket special applet
+[[	upstream-version	BusyBox 1.37 treats --help as an operand for the double-bracket special applet
+arping	unported-oem-extension	factory -B bridge receive interface has no stock or replacement-overlay caller
+awk	upstream-superset	1.37 documents -E as an alias for -f
+hwclock	upstream-superset	1.37 adds RTC parameter get/set interfaces
+ping	unported-oem-extension	factory -Q TOS patch has no stock or replacement-overlay caller
+ping6	wording-only	1.37 corrects the factory spelling of received
+pkill	upstream-superset	1.37 adds the -e reporting option
+readlink	wording-only	option order changed without a semantic loss
+reset	wording-only	description changed without a semantic loss
+seq	wording-only	argument spelling changed without a semantic loss
+start-stop-daemon	upstream-superset	fancy mode retains factory -q and 1.37 adds mature start options
+udhcpc	unported-oem-extension	factory -Q offer-only patch has no stock or replacement-overlay caller
+unzip	upstream-superset	1.37 adds -K to preserve SUID bits when explicitly requested
+xargs	upstream-superset	factory -0/-p/-x are restored; 1.37 additionally provides -o
+

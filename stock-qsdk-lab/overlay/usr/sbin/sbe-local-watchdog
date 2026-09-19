@@ -1,0 +1,208 @@
+#!/bin/sh
+
+# Local replacement for the useful, non-cloud parts of OpenSync healthcheck.
+# It records bounded status and logs state transitions; it never uploads data,
+# restarts a service, reboots the router or writes persistent storage.
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+umask 077
+
+proc_root=${SBE_WATCHDOG_PROC_ROOT:-/proc}
+tmp_path=${SBE_WATCHDOG_TMP_PATH:-/tmp}
+state_file=${SBE_WATCHDOG_STATE_FILE:-/var/run/sbe-watchdog/state}
+last_file=${SBE_WATCHDOG_LAST_FILE:-/var/run/sbe-watchdog/last}
+uci_cmd=${SBE_WATCHDOG_UCI:-/sbin/uci}
+pidof_cmd=${SBE_WATCHDOG_PIDOF:-/bin/pidof}
+df_cmd=${SBE_WATCHDOG_DF:-/bin/df}
+logger_cmd=${SBE_WATCHDOG_LOGGER:-/usr/bin/logger}
+required_processes=${SBE_WATCHDOG_PROCESSES:-"netifd rpcd uhttpd dropbear dnsmasq thermald askey_pwm"}
+
+is_uint() {
+	case "$1" in
+		''|*[!0-9]*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+
+read_uint() {
+	local file="$1" value
+	[ -r "$file" ] || return 1
+	IFS= read -r value < "$file" || return 1
+	is_uint "$value" || return 1
+	printf '%s\n' "$value"
+}
+
+percentage() {
+	local used="$1" total="$2"
+	is_uint "$used" && is_uint "$total" && [ "$total" -gt 0 ] || {
+		printf '%s\n' 0
+		return
+	}
+	printf '%s\n' $((used * 100 / total))
+}
+
+setting() {
+	local option="$1" fallback="$2" value
+	value=$($uci_cmd -q get "sbe-services.watchdog.$option" 2>/dev/null) || value=$fallback
+	is_uint "$value" || value=$fallback
+	printf '%s\n' "$value"
+}
+
+percent_setting() {
+	local value
+	value=$(setting "$1" 85)
+	[ "$value" -ge 50 ] && [ "$value" -le 99 ] || value=85
+	printf '%s\n' "$value"
+}
+
+add_warning() {
+	if [ -n "$warnings" ]; then
+		warnings="$warnings; $1"
+	else
+		warnings=$1
+	fi
+}
+
+prepare_runtime_directory() {
+	local state_dir last_dir
+	state_dir=$(dirname "$state_file")
+	last_dir=$(dirname "$last_file")
+	[ "$state_dir" = "$last_dir" ] || return 1
+	[ ! -L "$state_dir" ] || return 1
+	mkdir -p "$state_dir" || return 1
+	[ -d "$state_dir" ] && [ ! -L "$state_dir" ] && [ -O "$state_dir" ] || return 1
+	chmod 700 "$state_dir" || return 1
+}
+
+count_zombies() {
+	local count=0 stat_file stat_line
+	for stat_file in "$proc_root"/[0-9]*/stat; do
+		[ -r "$stat_file" ] || continue
+		IFS= read -r stat_line < "$stat_file" || continue
+		case "$stat_line" in
+			*') Z '*) count=$((count + 1)) ;;
+		esac
+	done
+	printf '%s\n' "$count"
+}
+
+sample_once() {
+	local tmp_threshold conntrack_threshold file_threshold zombie_limit
+	local missing process tmp_percent conntrack_count conntrack_max conntrack_percent
+	local file_allocated file_max file_percent zombie_count health fingerprint old state_tmp last_tmp
+
+	tmp_threshold=$(percent_setting tmp_percent)
+	conntrack_threshold=$(percent_setting conntrack_percent)
+	file_threshold=$(percent_setting file_percent)
+	zombie_limit=$(setting zombie_limit 20)
+	[ "$zombie_limit" -le 1000 ] || zombie_limit=20
+
+	warnings=
+	missing=
+	for process in $required_processes; do
+		if ! "$pidof_cmd" "$process" >/dev/null 2>&1; then
+			missing="${missing}${missing:+ }$process"
+		fi
+	done
+	[ -z "$missing" ] || add_warning "missing processes: $missing"
+
+	tmp_percent=$($df_cmd -P "$tmp_path" 2>/dev/null | awk 'END { value=$5; gsub(/%/, "", value); if (value ~ /^[0-9]+$/) print value; else print 0 }')
+	is_uint "$tmp_percent" || tmp_percent=0
+	[ "$tmp_percent" -lt "$tmp_threshold" ] || add_warning "tmp usage ${tmp_percent}%"
+
+	conntrack_count=$(read_uint "$proc_root/sys/net/netfilter/nf_conntrack_count") || conntrack_count=0
+	conntrack_max=$(read_uint "$proc_root/sys/net/netfilter/nf_conntrack_max") || conntrack_max=0
+	conntrack_percent=$(percentage "$conntrack_count" "$conntrack_max")
+	[ "$conntrack_percent" -lt "$conntrack_threshold" ] || add_warning "conntrack usage ${conntrack_percent}%"
+
+	file_allocated=0
+	file_max=0
+	if [ -r "$proc_root/sys/fs/file-nr" ]; then
+		read -r file_allocated _ file_max < "$proc_root/sys/fs/file-nr" || true
+	fi
+	is_uint "$file_allocated" || file_allocated=0
+	is_uint "$file_max" || file_max=0
+	file_percent=$(percentage "$file_allocated" "$file_max")
+	[ "$file_percent" -lt "$file_threshold" ] || add_warning "file handle usage ${file_percent}%"
+
+	zombie_count=$(count_zombies)
+	[ "$zombie_count" -le "$zombie_limit" ] || add_warning "zombie processes $zombie_count"
+
+	health=ok
+	[ -z "$warnings" ] || health=warning
+	prepare_runtime_directory || {
+		echo 'unable to prepare watchdog runtime directory' >&2
+		return 1
+	}
+	state_tmp="$state_file.$$"
+	[ ! -e "$state_tmp" ] && [ ! -L "$state_tmp" ] || return 1
+	{
+		printf 'health=%s\n' "$health"
+		printf 'missing_processes=%s\n' "$missing"
+		printf 'tmp_percent=%s\n' "$tmp_percent"
+		printf 'conntrack_count=%s\n' "$conntrack_count"
+		printf 'conntrack_max=%s\n' "$conntrack_max"
+		printf 'conntrack_percent=%s\n' "$conntrack_percent"
+		printf 'file_allocated=%s\n' "$file_allocated"
+		printf 'file_max=%s\n' "$file_max"
+		printf 'file_percent=%s\n' "$file_percent"
+		printf 'zombie_count=%s\n' "$zombie_count"
+		printf 'warnings=%s\n' "$warnings"
+		date +updated_epoch=%s
+	} > "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	chmod 600 "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	mv -f "$state_tmp" "$state_file" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+
+	fingerprint="$health|$warnings"
+	old=
+	[ ! -r "$last_file" ] || IFS= read -r old < "$last_file" || true
+	if [ "$fingerprint" != "$old" ] && [ -x "$logger_cmd" ]; then
+		if [ "$health" = ok ]; then
+			"$logger_cmd" -t sbe-local-watchdog 'local health checks are normal' 2>/dev/null || true
+		else
+			"$logger_cmd" -t sbe-local-watchdog "local health warning: $warnings" 2>/dev/null || true
+		fi
+	fi
+	last_tmp="$last_file.$$"
+	[ ! -e "$last_tmp" ] && [ ! -L "$last_tmp" ] || return 1
+	printf '%s\n' "$fingerprint" > "$last_tmp" || {
+		rm -f "$last_tmp"
+		return 1
+	}
+	chmod 600 "$last_tmp" || {
+		rm -f "$last_tmp"
+		return 1
+	}
+	mv -f "$last_tmp" "$last_file" || {
+		rm -f "$last_tmp"
+		return 1
+	}
+}
+
+case "${1:-once}" in
+	once)
+		sample_once
+		;;
+	daemon)
+		while :; do
+			sample_once
+			interval=$(setting interval 60)
+			[ "$interval" -ge 15 ] && [ "$interval" -le 600 ] || interval=60
+			sleep "$interval"
+		done
+		;;
+	*)
+		echo 'usage: sbe-local-watchdog [once|daemon]' >&2
+		exit 2
+		;;
+esac

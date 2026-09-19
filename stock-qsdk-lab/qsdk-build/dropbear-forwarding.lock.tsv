@@ -1,0 +1,7 @@
+# kind	name	version	architecture	sha256
+source	dropbear-2026.94.tar.bz2	2026.94	source	e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1ae81
+recipe	sbe-dropbear2026-candidate/Makefile	2026.94-3	all	eb08cb38b78a4cfdcf2ee98d715c76069f6a3dfecf49796b052a16328fd080d7
+build-config	CANDIDATE_BUILD_CONFIG	2026.94-3	ipq95xx-generic	e7e61b3d5c94d3d285990e14ee83ddb48280dfb5c49418937474e735f4b33c59
+compile-policy	DROPBEAR_COMPILE_POLICY	2026.94-3	aarch64_cortex-a73_neon-vfpv4	1fdeadff294c22ecf1d2245ded9c829ad1d132339aee71115ec5040692255c01
+ipk	sbe-dropbear2026-candidate_2026.94-3_aarch64_cortex-a73_neon-vfpv4.ipk	2026.94-3	aarch64_cortex-a73_neon-vfpv4	125c0454a23b943f4c5e0d4ae1571eb1cd5e29913dea4fee920afcc3ce6ff0e4
+binary	/usr/libexec/sbe-qsdk-lab/dropbear-2026.94/dropbear	2026.94-3	aarch64_cortex-a73_neon-vfpv4	cf8794e99d01735cfe186834193e7540425e0db4547bab23defb4d1c35a139e3

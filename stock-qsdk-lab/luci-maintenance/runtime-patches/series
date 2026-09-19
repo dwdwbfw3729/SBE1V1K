@@ -1,0 +1,6 @@
+# Applied to the archived QSDK package recipes in this exact order.
+100-lua-security-backports.patch
+110-ubus-lua-safety-backports.patch
+120-uci-lua-leak-backports.patch
+130-iwinfo-scan-entry-init.patch
+140-iwinfo-6ghz-channels.patch

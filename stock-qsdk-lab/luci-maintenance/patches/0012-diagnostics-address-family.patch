@@ -1,0 +1,31 @@
+From: SBE1V1K maintainers
+Subject: [PATCH] luci-mod-network: select the diagnostic address family
+
+Backport the upstream diagnostic argument changes without replacing the QSDK
+view, changing resolver policy or modifying the command providers. The selected
+BusyBox 1.37.0 ping/ping6 and traceroute applets support these flags.
+
+Upstream-Commit: https://github.com/openwrt/luci/commit/547776327a7174bb5d2fada59e2a4782eedd9b96
+Upstream-Commit: https://github.com/openwrt/luci/commit/c4f429461545d1401429e7ba133f24a55d1015b6
+
+diff --git a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/diagnostics.js b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/diagnostics.js
+--- a/modules/luci-mod-network/htdocs/luci-static/resources/view/network/diagnostics.js
++++ b/modules/luci-mod-network/htdocs/luci-static/resources/view/network/diagnostics.js
+@@ -28,7 +28,7 @@ return view.extend({
+ 	handlePing: function(ev, cmd) {
+ 		var exec = cmd || 'ping',
+ 		    addr = ev.currentTarget.parentNode.previousSibling.value,
+-		    args = (exec == 'ping') ? [ '-c', '5', '-W', '1', addr ] : [ '-c', '5', addr ];
++		    args = (exec == 'ping') ? [ '-4', '-c', '5', '-W', '1', addr ] : [ '-6', '-c', '5', addr ];
+ 
+ 		return this.handleCommand(exec, args);
+ 	},
+@@ -36,7 +36,7 @@ return view.extend({
+ 	handleTraceroute: function(ev, cmd) {
+ 		var exec = cmd || 'traceroute',
+ 		    addr = ev.currentTarget.parentNode.previousSibling.value,
+-		    args = (exec == 'traceroute') ? [ '-q', '1', '-w', '1', '-n', addr ] : [ '-q', '1', '-w', '2', '-n', addr ];
++		    args = (exec == 'traceroute') ? [ '-4', '-q', '1', '-w', '1', '-n', addr ] : [ '-q', '1', '-w', '2', '-n', addr ];
+ 
+ 		return this.handleCommand(exec, args);
+ 	},

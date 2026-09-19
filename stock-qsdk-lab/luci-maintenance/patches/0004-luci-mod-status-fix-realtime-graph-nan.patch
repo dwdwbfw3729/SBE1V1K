@@ -1,0 +1,75 @@
+From c6a5c809ed1fb050d257cf6273b8bc832babfa9b Mon Sep 17 00:00:00 2001
+From: Lukasz Baj <l.baj@celerway.com>
+Date: Fri, 16 Apr 2021 19:36:43 +0200
+Subject: [PATCH] luci-mod-status: fix NaN errors in realtime graphs
+
+When an empty, single-initial-sample, or all-zero data set leaves the graph
+scale undefined, draw the affected point on the baseline instead of emitting
+an invalid NaN SVG coordinate.
+
+Upstream-Commit: https://github.com/openwrt/luci/commit/c6a5c809ed1fb050d257cf6273b8bc832babfa9b
+Stable-Backport: https://github.com/openwrt/luci/commit/4243e21f1325f706313aea973c017d85ef8c876c
+Signed-off-by: Lukasz Baj <l.baj@celerway.com>
+Signed-off-by: Jo-Philipp Wich <jo@mein.io>
+---
+ .../htdocs/luci-static/resources/view/status/bandwidth.js   | 2 ++
+ .../htdocs/luci-static/resources/view/status/connections.js | 2 ++
+ .../htdocs/luci-static/resources/view/status/load.js        | 2 ++
+ .../htdocs/luci-static/resources/view/status/wireless.js    | 2 ++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/bandwidth.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/bandwidth.js
+index cb7cf8c23d..0fbe49c12c 100644
+--- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/bandwidth.js
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/bandwidth.js
+@@ -209,6 +209,8 @@ return view.extend({
+ 							y = ctx.height - Math.floor(values[i][j] * data_scale);
+ 							//y -= Math.floor(y % (1 / data_scale));
+ 
++							y = isNaN(y) ? ctx.height : y;
++
+ 							pt += ' ' + x + ',' + y;
+ 						}
+ 
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/connections.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/connections.js
+index a87fe53fed..168bfefdf8 100644
+--- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/connections.js
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/connections.js
+@@ -281,6 +281,8 @@ return view.extend({
+ 							y = ctx.height - Math.floor(values[i][j] * data_scale);
+ 							//y -= Math.floor(y % (1 / data_scale));
+ 
++							y = isNaN(y) ? ctx.height : y;
++
+ 							pt += ' ' + x + ',' + y;
+ 						}
+ 
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/load.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/load.js
+index 2766f5d1b5..633e43e6c3 100644
+--- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/load.js
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/load.js
+@@ -186,6 +186,8 @@ return view.extend({
+ 							y = ctx.height - Math.floor(values[i][j] * data_scale);
+ 							//y -= Math.floor(y % (1 / data_scale));
+ 
++							y = isNaN(y) ? ctx.height : y;
++
+ 							pt += ' ' + x + ',' + y;
+ 						}
+ 
+diff --git a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/wireless.js b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/wireless.js
+index 0fdd3d56e7..8848143c98 100644
+--- a/modules/luci-mod-status/htdocs/luci-static/resources/view/status/wireless.js
++++ b/modules/luci-mod-status/htdocs/luci-static/resources/view/status/wireless.js
+@@ -202,6 +202,8 @@ return view.extend({
+ 							y = ctx.height - Math.floor(values[i][j] * data_scale);
+ 							//y -= Math.floor(y % (1 / data_scale));
+ 
++							y = isNaN(y) ? ctx.height : y;
++
+ 							pt += ' ' + x + ',' + y;
+ 						}
+ 
+-- 
+2.54.0
+

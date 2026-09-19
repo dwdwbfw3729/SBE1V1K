@@ -1,0 +1,9 @@
+#!/bin/sh
+# The standard dual-stack WAN does not need an automatically created CLAT.
+# Keep explicit CLAT choices and custom WAN topologies unchanged on upgrade.
+[ "$(uci -q get network.wan.proto)" = dhcp ] || exit 0
+[ "$(uci -q get network.wan6.proto)" = dhcpv6 ] || exit 0
+wan_device=$(uci -q get network.wan.ifname)
+[ -n "$wan_device" ] && [ "$wan_device" = "$(uci -q get network.wan6.ifname)" ] || exit 0
+uci -q get network.wan6.iface_464xlat >/dev/null && exit 0
+uci set network.wan6.iface_464xlat=0 && uci commit network

@@ -1,0 +1,2031 @@
+{
+  "artifacts": [
+    {
+      "component": "busybox",
+      "format": "raw",
+      "mode": "0755",
+      "path": "busybox-candidate/out/busybox-1.37.0-qsdk-candidate",
+      "sha256": "74feb27ee0a49f7a234a13245f701d78ba5af47c5922e7b7e817ea4b4046683f",
+      "staging_path": "/bin/busybox"
+    },
+    {
+      "component": "procd",
+      "format": "ipk",
+      "path": "procd-board-build/candidate-out/procd-board/sbe-procd2020-board-candidate_2020.03.07~09b9bd82-1_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "f0752910dbce5dcfd75dc3a0f2cdd9ed520c27c8d13d5029a02b30faf644b5b5"
+    },
+    {
+      "component": "logd",
+      "format": "raw",
+      "mode": "0755",
+      "path": "logd-candidate/out/logd",
+      "sha256": "113b2b0ad39d02988aaf4088d491a89a237fb939d9c32677f90a95d7b76b1c40",
+      "staging_path": "/sbin/logd"
+    },
+    {
+      "component": "logread",
+      "format": "raw",
+      "mode": "0755",
+      "path": "logd-candidate/out/logread",
+      "sha256": "ef3337cb5b10cec5529f826e3fcc4129fa4fa747f0aa551e61055b9431817454",
+      "staging_path": "/sbin/logread"
+    },
+    {
+      "component": "dropbear",
+      "format": "ipk",
+      "path": "qsdk-build/out/dropbear-forwarding/run-a/sbe-dropbear2026-candidate_2026.94-3_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "125c0454a23b943f4c5e0d4ae1571eb1cd5e29913dea4fee920afcc3ce6ff0e4"
+    },
+    {
+      "component": "openssl",
+      "format": "ipk",
+      "path": "cache/candidates/openssl-3.5.8-db98575d.ipk",
+      "sha256": "db98575d8f783c9974ec84822f355030b1fe907d996836f160e2327794314e96"
+    },
+    {
+      "component": "curl",
+      "format": "ipk",
+      "path": "cache/candidates/curl-8.22.0-e2299b90.ipk",
+      "sha256": "e2299b90a5a8a878b865fb0fdb2218708eeef14f00bf036df46f9e5237fb7e7e"
+    },
+    {
+      "component": "libubus20210603-security",
+      "format": "ipk",
+      "path": "ubus-security-build/candidate-out/ubus-security/sbe-libubus20210603-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "59dbb8ad7d8e4c1acce21c6814a98b5687b897e3c85b29ea4db6b39d314c5eb5"
+    },
+    {
+      "component": "ubus-security",
+      "format": "ipk",
+      "path": "ubus-security-build/candidate-out/ubus-security/sbe-ubus2022-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "96573acbc44c0e1fd760f85eb0ad4ef238c9a73f1c1ca55744c6fad2c59b8677"
+    },
+    {
+      "component": "ubusd-security",
+      "format": "ipk",
+      "path": "ubus-security-build/candidate-out/ubus-security/sbe-ubusd2022-security-candidate_2022.02.21+sec2026.05.23-1_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "106a0a38665fe339fc84d0668990bfd7cda20aa16acb1a235557620079b75d4e"
+    },
+    {
+      "component": "cgi-io-security",
+      "format": "ipk",
+      "path": "cache/candidates/cgi-io-2026-da43a0a8.ipk",
+      "sha256": "da43a0a8c7ebd9f72dcef520c4c8bf58fbcb41f5c8a62ff2e2954c1425f53de8"
+    },
+    {
+      "component": "lucihttp-core-abi0",
+      "format": "ipk",
+      "path": "cache/candidates/liblucihttp0-2023-8de02e2c.ipk",
+      "sha256": "8de02e2c4489c9777913929b1b1f9e90fbafbae4c7b2fbee8ebcd7c063e85521"
+    },
+    {
+      "component": "lucihttp-lua-abi0",
+      "format": "ipk",
+      "path": "cache/candidates/liblucihttp-lua-2023-ececa54e.ipk",
+      "sha256": "ececa54ea99f9626ddf3338bbf93772ae1788c60d0fba27f34f9a8f360278962"
+    },
+    {
+      "component": "uhttpd",
+      "format": "ipk",
+      "path": "cache/candidates/uhttpd-2026-106ba8cc.ipk",
+      "sha256": "106ba8cc7cbe243957db6a5764dd25a41cd71f45818c0f3d7302460ca8a0f2e9"
+    },
+    {
+      "component": "uhttpd-mod-ubus",
+      "format": "ipk",
+      "path": "cache/candidates/uhttpd-mod-ubus-2026-d5649ae5.ipk",
+      "sha256": "d5649ae50d992f43dde6587b72d2846376a62e2a277610ec39055701b1721fc2"
+    },
+    {
+      "component": "rpcd",
+      "format": "ipk",
+      "path": "cache/candidates/rpcd-2026-cea957f5.ipk",
+      "sha256": "cea957f5124e5e386574eaa6a9aeaa830bc6bd91e6a13354a3ddc5ba14b3b3be"
+    },
+    {
+      "component": "rpcd-mod-file",
+      "format": "ipk",
+      "path": "cache/candidates/rpcd-mod-file-2026-3f0a246c.ipk",
+      "sha256": "3f0a246caebc7cecfbf8417d67952521f9907d6774a2ace3da1152517e0eeb78"
+    },
+    {
+      "component": "rpcd-mod-iwinfo",
+      "format": "ipk",
+      "path": "core-userland-build/candidate-out/core-userland-2026/sbe-rpcd2026-mod-iwinfo-candidate_2026.07.19~e37ed9d8-1_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "9a30f8a1532beaf591a3a572d5e3bca1c87cd7a6665411178574fd1b910d16a2"
+    },
+    {
+      "component": "rpcd-mod-rpcsys",
+      "format": "ipk",
+      "path": "cache/candidates/rpcd-mod-rpcsys-2026-aaa470d0.ipk",
+      "sha256": "aaa470d0917e6d0b33f64675010a91e97e7a1e5f45b08fa4745f6958c14e3058"
+    },
+    {
+      "component": "odhcpd-ipv6only",
+      "format": "ipk",
+      "path": "cache/candidates/odhcpd-ipv6only-2026-d1fcbc52.ipk",
+      "sha256": "d1fcbc52fc4883f9ed03be859e1d96f960bed2ef1a3b9d7c6c9a45ba30bcf95c"
+    },
+    {
+      "component": "ppp",
+      "format": "ipk",
+      "path": "cache/candidates/ppp-2.5.4-dev-0829ea7a.ipk",
+      "sha256": "0829ea7afb1719427a196f734dea9c39326ce1954007cf61fa889717c491614a"
+    },
+    {
+      "component": "ppp-mod-pppoe",
+      "format": "ipk",
+      "path": "cache/candidates/ppp-mod-pppoe-2.5.4-cd0a327a.ipk",
+      "sha256": "cd0a327abfce1fc4578e5c27107d4d24224a8d7d36bf9b1b8663be1bb4ab5287"
+    },
+    {
+      "component": "dnsmasq",
+      "format": "ipk",
+      "path": "passwall-native-candidate/candidate-out/dnsmasq-full_2.93-1-qsdk3_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "912507b8704d8dd6d3fa7c78c89a931d5391abedf74c1b42b0f8e4540f2e4cca"
+    },
+    {
+      "component": "miniupnpd",
+      "format": "ipk",
+      "path": "cache/candidates/miniupnpd-2.3.11-881b7620.ipk",
+      "sha256": "881b762027cbb803c9254afafb875e71432e5606ca4226939d6e548101310792"
+    },
+    {
+      "component": "ntpdate",
+      "format": "ipk",
+      "path": "cache/candidates/ntpdate-4.2.8p18-r2-7f12c938.ipk",
+      "sha256": "7f12c9388dd0ccf3267e29cfe71da5ba33caa1a77b000dc105bd72ee897d5615"
+    },
+    {
+      "component": "rpcd-mod-rrdns",
+      "format": "ipk",
+      "path": "cache/candidates/rpcd-mod-rrdns-20170710-6c82bb02.ipk",
+      "sha256": "6c82bb02de61cbe5b2d980affa165a1a1714908e8c1ebf2701c0ed7ae1c95ae7"
+    },
+    {
+      "component": "mtr",
+      "format": "ipk",
+      "path": "cache/candidates/mtr-0.96-77d66f06.ipk",
+      "sha256": "77d66f06a5f60dc01fc9d6098843b137d57355cc3ba413b67c57292907793fee"
+    },
+    {
+      "component": "htop",
+      "format": "ipk",
+      "path": "cache/candidates/htop-3.5.3-22d1ee2e.ipk",
+      "sha256": "22d1ee2e3373fdd85d5455051e1b29cf219a4a2212338d958269593d38920f1d"
+    },
+    {
+      "component": "nano",
+      "format": "ipk",
+      "path": "cache/candidates/nano-9.2-ef985081.ipk",
+      "sha256": "ef9850813f969683631e13efc73eac2a9f0a6e132f507c4d704c54a315c4116d"
+    },
+    {
+      "component": "source-ddns-ddns-scripts",
+      "format": "ipk",
+      "path": "ddns-native-candidate/candidate-out/ddns-native/ddns-scripts_2.7.8-14_all.ipk",
+      "sha256": "cdf7ab62d0009aa05a9420b9bf89416ee49aa4d173125ef6e2479d6ce9db646d"
+    },
+    {
+      "component": "source-ddns-ddns-scripts-cloudflare-v4",
+      "format": "ipk",
+      "path": "ddns-native-candidate/candidate-out/ddns-native/ddns-scripts_cloudflare.com-v4_2.7.8-14_all.ipk",
+      "sha256": "ae24e1fda174c848559d8d89078450a1b88623eb3cb35905d4278dd93a3a8b96"
+    },
+    {
+      "component": "source-ddns-luci-lib-ipkg",
+      "format": "ipk",
+      "path": "ddns-native-candidate/candidate-out/ddns-native/luci-lib-ipkg_git-22.283.16672-4b50d79-1_all.ipk",
+      "sha256": "af4e0b1e019c29458286bd2d1000a42ae5e825902e9a9b98302d5522d6b3f04d"
+    },
+    {
+      "component": "source-ddns-luci-app-ddns",
+      "format": "ipk",
+      "path": "ddns-native-candidate/candidate-out/ddns-native/luci-app-ddns_2.4.9-7_all.ipk",
+      "sha256": "aa6b868e339ccdf17c089e492f444d81567942b082fe1b9df9908af6afb880cd"
+    },
+    {
+      "component": "source-ddns-luci-i18n-ddns-zh-cn",
+      "format": "ipk",
+      "path": "ddns-native-candidate/candidate-out/ddns-native/luci-i18n-ddns-zh-cn_2.4.9-7_all.ipk",
+      "sha256": "010fb4045c0587cda445d0c02a29c84ebf15a611e10942cddb0e6d56e3f607b7"
+    },
+    {
+      "component": "source-runtime-liblua5-1-5",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/liblua5.1.5_5.1.5-4_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "48dd2ea237ddd7996a09b4faab2f2e5651ebe32af9e46f18a31c86388480bd40"
+    },
+    {
+      "component": "source-runtime-lua",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/lua_5.1.5-4_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "6e29dc1070979ab34838470b4838badd5ea401279375347fee7b15930afbd1df"
+    },
+    {
+      "component": "source-runtime-libubus-lua",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/libubus-lua_2022-02-21-b32a0e17-2_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "c6d173f5e33a87f4abc3f45028eb744d1659f92943d45033e51e4c748c471efb"
+    },
+    {
+      "component": "source-libuci-security",
+      "format": "ipk",
+      "path": "uci-security-build/candidate-out/libuci-security/libuci20130104_2019-09-01-415f9e48-5_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "c4190c87425e096524d5a7f5b4eafb23417235199957bf0334c493271048f5f8"
+    },
+    {
+      "component": "source-runtime-libuci-lua",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/libuci-lua_2019-09-01-415f9e48-5_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "9c4d8faad1c55442a5323e428cd22bbe6308b7cbc969b3d18664518db9f94c21"
+    },
+    {
+      "component": "source-runtime-libiwinfo20181126",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/libiwinfo20181126_2019-10-16-07315b6f-3_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "5918018efa75975d4033729b4a82f50b6019591f94c496901d00d61399506fa4"
+    },
+    {
+      "component": "source-runtime-libiwinfo-lua",
+      "format": "ipk",
+      "path": "luci-maintenance/runtime-candidate-out/release/libiwinfo-lua_2019-10-16-07315b6f-3_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "ea4adaae860839e502cb2f95489e6ea6b2fc9f94c472a94130efa2a2b99a4e86"
+    },
+    {
+      "component": "source-luci-luci-app-firewall",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-app-firewall_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "a9d5418eb0210b350fc9ab7f3e6dd62644b067f606535fc22114627fb6ef31c7"
+    },
+    {
+      "component": "source-luci-luci-app-opkg",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-app-opkg_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "bc1cb0fb5b8e1b059166ecf633c350f74670dcc79a0f7cacefb4ac0d0b529a5e"
+    },
+    {
+      "component": "source-luci-luci-app-upnp",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-app-upnp_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "8d59b7c5b2d89423098a474af8ef5a12e011354c8fc0f49b190168d7ffd7bf1d"
+    },
+    {
+      "component": "source-luci-luci-base",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-base_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "9082d38ca3d2bd90da83c0235fac06f18c2e52fc1276f21179b3112262995c40"
+    },
+    {
+      "component": "source-luci-luci-compat",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-compat_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "a132659b23edadf066298aec965065cf14f6c0fa5ba15747cfde68d605ef2773"
+    },
+    {
+      "component": "source-luci-luci-i18n-base-zh-cn",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-i18n-base-zh-cn_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "4e3c4ffc02a99ac9fbb9229727f0776fdfd0000f38a9ebdee1294923dda67d62"
+    },
+    {
+      "component": "source-luci-luci-i18n-firewall-zh-cn",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-i18n-firewall-zh-cn_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "2bcce781abd0e11b5bedfc57bec026fd95f274648a9feb77469daa2069f1237d"
+    },
+    {
+      "component": "source-luci-luci-i18n-opkg-zh-cn",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-i18n-opkg-zh-cn_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "6fdd8a55b5268669fbcc13086acb17d0bac42eceb6367703f912aff8cdac95ed"
+    },
+    {
+      "component": "source-luci-luci-i18n-upnp-zh-cn",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-i18n-upnp-zh-cn_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "724f7d7f97a098c8e358da0f1209c96a2262cf6a1115d6b5b9eed43960e39a94"
+    },
+    {
+      "component": "source-luci-luci-lib-ip",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-lib-ip_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "3b2ae01d3bab8d551e4bad8d4e27c70d7020013f648fe283fd5698d941be117d"
+    },
+    {
+      "component": "source-luci-luci-lib-jsonc",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-lib-jsonc_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "a2ed9bcd8afa09320c9c34fa33e901601fad5a58066ac0839bf386ebb6e86011"
+    },
+    {
+      "component": "source-luci-luci-lib-nixio",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-lib-nixio_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "ac72d3f2046a83394f4e06450aab80b203d92957c1a3ba85b919fef65a21604c"
+    },
+    {
+      "component": "source-luci-luci-mod-admin-full",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-mod-admin-full_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "6ce237ce227d85f17e4d26a720fcce4a400138b1f547c085b479143d4f652fb8"
+    },
+    {
+      "component": "source-luci-luci-mod-network",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-mod-network_git-22.283.16672-4b50d79-9_all.ipk",
+      "sha256": "324caa1326c5732280dc741c78de005585eeac99dba5b2511704c67e8dfbc2bb"
+    },
+    {
+      "component": "source-luci-luci-mod-status",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-mod-status_git-22.283.16672-4b50d79-8_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "f8a77774d4eca20e4cf3555d430fb8600254f517167ac9c904f2984dffdba099"
+    },
+    {
+      "component": "source-luci-luci-mod-system",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-mod-system_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "afcb3fbd57e7a401c32dfbd4b328cab9142475361fe5b0a29499238b3c020b36"
+    },
+    {
+      "component": "source-luci-luci-proto-ipv6",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-proto-ipv6_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "3fdf86acdf5e89098d0a2a8259bb8f06b298a080c3d1e29563788bcc7827be3d"
+    },
+    {
+      "component": "source-luci-luci-proto-ppp",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-proto-ppp_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "cccf682be5834fb2a8c1fbf1fa5f69e625001d67bef1636af791c1a38ae1938f"
+    },
+    {
+      "component": "source-luci-luci-proto-vxlan",
+      "format": "ipk",
+      "path": "luci-proto-vxlan-candidate/out/luci-proto-vxlan_git-20.153.52583-6dd22ec-1_all.ipk",
+      "sha256": "1f73d641d446c024a137fc6cee3c01803c244d29e4d006b606331a54dce4206e"
+    },
+    {
+      "component": "source-luci-luci-theme-bootstrap",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/luci-theme-bootstrap_git-22.283.16672-4b50d79-8_all.ipk",
+      "sha256": "f7f792b1bcc09cf92e3ec3bf8fd4ec46d652f557603ea72516708c9e79553340"
+    },
+    {
+      "component": "source-luci-rpcd-mod-luci",
+      "format": "ipk",
+      "path": "luci-maintenance/candidate-out/release/rpcd-mod-luci_20201107-2_aarch64_cortex-a73_neon-vfpv4.ipk",
+      "sha256": "f20af02321709be5f467e559611d4cbda794aea9d79be0471ac834b8a0113a41"
+    }
+  ],
+  "format": 1,
+  "name": "production",
+  "operations": [
+    {
+      "destination": "/usr/sbin/dropbear",
+      "mode": "0755",
+      "op": "promote",
+      "source": "/usr/libexec/sbe-qsdk-lab/dropbear-2026.94/dropbear"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/libexec/sbe-qsdk-lab/dropbear-2026.94"
+    },
+    {
+      "destination": "/usr/sbin/ntpdate",
+      "mode": "0755",
+      "op": "promote",
+      "source": "/usr/libexec/sbe-qsdk-lab/ntpdate-4.2.8p18"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/libexec/sbe-qsdk-lab/ntpdate-4.2.8p18"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/lib/pppd/2.4.7"
+    },
+    {
+      "op": "remove",
+      "path": "/etc/hotplug.d/iface/95-sbe-ddns"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/libexec/sbe-ddns-cloudflare"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/share/sbe-ddns"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/lib/lua/luci/controller/sbe_ddns.lua"
+    },
+    {
+      "op": "remove",
+      "path": "/usr/lib/lua/luci/model/cbi/sbe-ddns.lua"
+    }
+  ],
+  "packages": [
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/bin/busybox"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "BusyBox 1.37.0 rebuilt with the locked QSDK toolchain, factory-compatible applet semantics, and the standard OpenWrt ntpd client service",
+      "essential": true,
+      "name": "busybox",
+      "replaces": [
+        "busybox"
+      ],
+      "retained_paths": [
+        "/etc/init.d/sysntpd",
+        "/etc/rc.d/S98sysntpd",
+        "/usr/sbin/ntpd",
+        "/usr/sbin/ntpd-hotplug"
+      ],
+      "source": "https://busybox.net/downloads/busybox-1.37.0.tar.bz2",
+      "source_revision": "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4",
+      "version": "1.37.0-2-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/sbin/procd",
+        "/sbin/ujail"
+      ],
+      "depends": [
+        "libc",
+        "ubusd",
+        "ubus",
+        "libjson-script",
+        "ubox",
+        "libubox20191228",
+        "libubus20210603",
+        "libblobmsg-json",
+        "libjson-c2"
+      ],
+      "description": "Exact QSDK SPF12.2 procd baseline with the two QSDK runtime patches, the official OpenWrt AArch64 system.board compatibility backport, and its ABI-matched ujail helper. Stock init and unrelated helper binaries stay untouched.",
+      "essential": true,
+      "name": "procd",
+      "replaces": [
+        "procd"
+      ],
+      "retained_paths": [
+        "/etc/hotplug-preinit.json",
+        "/etc/hotplug.json",
+        "/lib/functions/procd.sh",
+        "/lib/libsetlbf.so",
+        "/sbin/askfirst",
+        "/sbin/init",
+        "/sbin/reload_config",
+        "/sbin/udevtrigger",
+        "/sbin/upgraded"
+      ],
+      "source": "https://git.openwrt.org/project/procd.git",
+      "source_revision": "09b9bd828981a4f9271f8906f7b6f5af04e1a6f9",
+      "version": "2020.03.07~09b9bd82-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/sbin/logd",
+        "/sbin/logread"
+      ],
+      "depends": [
+        "libc",
+        "libgcc1",
+        "libubox20191228",
+        "libubus20210603",
+        "libjson-c2",
+        "libblobmsg-json"
+      ],
+      "description": "QSDK ubox logd and logread rebuilt with the locked toolchain, retaining memory, file, UDP and TCP logging modes",
+      "essential": true,
+      "name": "logd",
+      "replaces": [
+        "logd"
+      ],
+      "retained_paths": [
+        "/etc/init.d/log"
+      ],
+      "source": "https://sources.openwrt.org/ubox-2019-06-16-4df34a4d.tar.xz",
+      "source_revision": "4df34a4d0d5183135217fc8280faae8e697147bc",
+      "version": "2019-06-16-4df34a4d-4-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/dropbear"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "Isolated QSDK-toolchain build for RAM/chroot validation. Password and public key authentication are compiled in, while a blank password is accepted only when the server is explicitly started with -B. Standard server-side TCP, Unix-stream, agent and X11 forwarding are compiled in. The package installs no init script, host key, authorized_keys file, password or other credential.",
+      "essential": true,
+      "name": "dropbear",
+      "replaces": [
+        "dropbear"
+      ],
+      "retained_paths": [
+        "/etc/config/dropbear",
+        "/etc/init.d/dropbear",
+        "/usr/bin/dbclient",
+        "/usr/bin/dropbearkey",
+        "/usr/bin/scp",
+        "/usr/bin/ssh"
+      ],
+      "source": "https://matt.ucc.asn.au/dropbear/releases/dropbear-2026.94.tar.bz2",
+      "source_revision": "e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1ae81",
+      "version": "2026.94-3-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/etc/ssl3/openssl.cnf",
+        "/usr/bin/openssl3",
+        "/usr/lib/libcrypto.so.3",
+        "/usr/lib/libssl.so.3"
+      ],
+      "depends": [
+        "libc",
+        "libgcc1"
+      ],
+      "description": "Side-by-side OpenSSL 3.5.8 LTS runtime for locally maintained clients without changing the factory OpenSSL 1.1 ABI",
+      "name": "sbe-openssl3",
+      "replaces": [
+        "sbe-openssl3"
+      ],
+      "retained_paths": [],
+      "source": "https://github.com/openssl/openssl/releases/tag/openssl-3.5.8",
+      "source_revision": "f4dc4d58b48d346a8270183f89acf826d459b0ca",
+      "version": "3.5.8-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/bin/curl-sbe"
+      ],
+      "depends": [
+        "libc",
+        "libgcc1",
+        "zlib",
+        "sbe-openssl3"
+      ],
+      "description": "Minimal HTTP and HTTPS curl 8.22.0 client linked to the isolated OpenSSL 3 ABI for controlled local scripts",
+      "name": "sbe-curl",
+      "replaces": [
+        "sbe-curl"
+      ],
+      "retained_paths": [],
+      "source": "https://curl.se/download/curl-8.22.0.tar.xz",
+      "source_revision": "01346829096c61b372692f6dc43ffa778c6caccd",
+      "version": "8.22.0-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/lib/libubus.so.20210603"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228"
+      ],
+      "description": "SBE ABI-preserving ubus security candidate (libubus.so.20210603)",
+      "name": "libubus20210603",
+      "replaces": [
+        "libubus20210603"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/ubus.git",
+      "source_revision": "1ed9bb06dcae7f7306286884f65b3e286e197d9a5469afd720a3ef3a481dd751",
+      "version": "2022.02.21+sec2026.05.23-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/bin/ubus"
+      ],
+      "depends": [
+        "libc",
+        "libubus20210603",
+        "libubox20191228",
+        "libblobmsg-json"
+      ],
+      "description": "The factory 2022 ubus ABI rebuilt with the reviewed daemon and client memory, file-descriptor and lifetime fixes through 2026-05-23. The package contains no configuration, credential, init policy or firmware-writing operation.",
+      "name": "ubus",
+      "replaces": [
+        "ubus"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/ubus.git",
+      "source_revision": "1ed9bb06dcae7f7306286884f65b3e286e197d9a5469afd720a3ef3a481dd751",
+      "version": "2022.02.21+sec2026.05.23-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/sbin/ubusd"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228",
+        "libblobmsg-json",
+        "libjson-c2"
+      ],
+      "description": "SBE ABI-preserving ubus security candidate (daemon)",
+      "essential": true,
+      "name": "ubusd",
+      "replaces": [
+        "ubusd"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/ubus.git",
+      "source_revision": "1ed9bb06dcae7f7306286884f65b3e286e197d9a5469afd720a3ef3a481dd751",
+      "version": "2022.02.21+sec2026.05.23-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/libexec/cgi-io"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228",
+        "libubus20210603"
+      ],
+      "description": "Current cgi-io with canonical-path ACL and malformed percent-decoding fixes, retaining only the reviewed backup, upload and bounded-exec CGI entry-point links",
+      "name": "cgi-io",
+      "replaces": [
+        "cgi-io"
+      ],
+      "retained_paths": [
+        "/www/cgi-bin/cgi-backup",
+        "/www/cgi-bin/cgi-exec",
+        "/www/cgi-bin/cgi-upload"
+      ],
+      "source": "https://git.openwrt.org/project/cgi-io.git",
+      "source_revision": "31cb3c89f02d918d7f17bf62a80c852fc38a1ca1",
+      "version": "2026.07.21~31cb3c89-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/liblucihttp.so.0",
+        "/usr/lib/liblucihttp.so.0.1"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "LuCI HTTP 2023 core library preserving SONAME and ABI 0 for the legacy LuCI runtime",
+      "name": "liblucihttp0",
+      "replaces": [
+        "liblucihttp0"
+      ],
+      "retained_paths": [],
+      "source": "https://github.com/jow-/lucihttp.git",
+      "source_revision": "9b5b683fbb2bb0010aa031d620d0ab8105516757",
+      "version": "2023.03.15~9b5b683f-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/lucihttp.so"
+      ],
+      "depends": [
+        "libc",
+        "liblucihttp0",
+        "liblua5.1.5"
+      ],
+      "description": "Lua 5.1 binding built from the exact same LuCI HTTP 2023 source and selected atomically with the ABI 0 core",
+      "name": "liblucihttp-lua",
+      "replaces": [
+        "liblucihttp-lua"
+      ],
+      "retained_paths": [],
+      "source": "https://github.com/jow-/lucihttp.git",
+      "source_revision": "9b5b683fbb2bb0010aa031d620d0ab8105516757",
+      "version": "2023.03.15~9b5b683f-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/uhttpd"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228",
+        "libblobmsg-json",
+        "libjson-script",
+        "libjson-c2",
+        "libustream-openssl20150806"
+      ],
+      "description": "TLS and CGI capable uhttpd with current request parsing hardening; Lua and ucode plugins remain compiled out",
+      "name": "uhttpd",
+      "replaces": [
+        "uhttpd"
+      ],
+      "retained_paths": [
+        "/etc/config/uhttpd",
+        "/etc/init.d/uhttpd",
+        "/lib/upgrade/keep.d/uhttpd"
+      ],
+      "source": "https://git.openwrt.org/project/uhttpd.git",
+      "source_revision": "373145f72c884c36a2b16f7f47e74ffae06bd754",
+      "version": "2026.08.24~373145f7-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/uhttpd_ubus.so"
+      ],
+      "depends": [
+        "libc",
+        "uhttpd",
+        "libubus20210603",
+        "libubox20191228",
+        "libblobmsg-json",
+        "libjson-c2"
+      ],
+      "description": "uhttpd ubus module built atomically from the exact same locked source as the canonical server",
+      "name": "uhttpd-mod-ubus",
+      "replaces": [
+        "uhttpd-mod-ubus"
+      ],
+      "retained_paths": [
+        "/etc/uci-defaults/00_uhttpd_ubus"
+      ],
+      "source": "https://git.openwrt.org/project/uhttpd.git",
+      "source_revision": "373145f72c884c36a2b16f7f47e74ffae06bd754",
+      "version": "2026.08.24~373145f7-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/sbin/rpcd",
+        "/usr/share/rpcd/acl.d/unauthenticated.json"
+      ],
+      "depends": [
+        "libc",
+        "libubus20210603",
+        "libubox20191228",
+        "libuci20130104",
+        "libblobmsg-json",
+        "libjson-c2"
+      ],
+      "description": "Current rpcd daemon with symlink-aware file ACL handling, paired with same-source file, iwinfo and restricted rpc-sys modules",
+      "name": "rpcd",
+      "replaces": [
+        "rpcd"
+      ],
+      "retained_paths": [
+        "/etc/config/rpcd",
+        "/etc/init.d/rpcd"
+      ],
+      "source": "https://git.openwrt.org/project/rpcd.git",
+      "source_revision": "e37ed9d814699098eb7e26c8b33c054840782dfb",
+      "version": "2026.07.19~e37ed9d8-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/rpcd/file.so"
+      ],
+      "depends": [
+        "libc",
+        "rpcd",
+        "libubus20210603",
+        "libubox20191228"
+      ],
+      "description": "Same-source rpcd file module with symlink-safe ACL resolution",
+      "name": "rpcd-mod-file",
+      "replaces": [
+        "rpcd-mod-file"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/rpcd.git",
+      "source_revision": "e37ed9d814699098eb7e26c8b33c054840782dfb",
+      "version": "2026.07.19~e37ed9d8-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/rpcd/iwinfo.so"
+      ],
+      "depends": [
+        "libc",
+        "rpcd",
+        "libubus20210603",
+        "libubox20191228",
+        "libiwinfo20181126"
+      ],
+      "description": "SBE isolated rpcd 2026 candidate (factory libiwinfo ABI plugin)",
+      "name": "rpcd-mod-iwinfo",
+      "replaces": [
+        "rpcd-mod-iwinfo"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/rpcd.git",
+      "source_revision": "e37ed9d814699098eb7e26c8b33c054840782dfb",
+      "version": "2026.07.19~e37ed9d8-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/rpcd/rpcsys.so"
+      ],
+      "depends": [
+        "libc",
+        "rpcd",
+        "libubus20210603",
+        "libubox20191228"
+      ],
+      "description": "Same-source rpc-sys module with firmware upgrade, validation and factory-reset methods compiled out",
+      "name": "rpcd-mod-rpcsys",
+      "replaces": [
+        "rpcd-mod-rpcsys"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/rpcd.git",
+      "source_revision": "e37ed9d814699098eb7e26c8b33c054840782dfb",
+      "version": "2026.07.19~e37ed9d8-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/odhcpd"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228",
+        "libuci20130104",
+        "libubus20210603",
+        "libnl-tiny",
+        "libjson-c2"
+      ],
+      "description": "IPv6-only odhcpd with current memory-safety, XSS and NDP fixes; DHCPv4 remains compiled out",
+      "name": "odhcpd-ipv6only",
+      "replaces": [
+        "odhcpd-ipv6only"
+      ],
+      "retained_paths": [
+        "/etc/init.d/odhcpd",
+        "/etc/uci-defaults/odhcpd.defaults",
+        "/usr/sbin/odhcpd-update"
+      ],
+      "source": "https://git.openwrt.org/project/odhcpd.git",
+      "source_revision": "68f382690bfaec56d5b1f31c3c31c48bcb642e3a",
+      "version": "2026.06.28~68f38269-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/pppd"
+      ],
+      "depends": [
+        "libc",
+        "kmod-ppp"
+      ],
+      "description": "Post-v2.5.3 pppd with core PAP, CHAP, IPv4, IPv6 and plugin support but without RADIUS, PPTP, EAP-TLS or other non-target features",
+      "name": "ppp",
+      "replaces": [
+        "ppp"
+      ],
+      "retained_paths": [
+        "/etc/ppp/chap-secrets",
+        "/etc/ppp/filter",
+        "/etc/ppp/options",
+        "/etc/ppp/resolv.conf",
+        "/lib/netifd/ppp-down",
+        "/lib/netifd/ppp-up",
+        "/lib/netifd/ppp6-up",
+        "/lib/netifd/proto/ppp.sh",
+        "/lib/upgrade/keep.d/ppp"
+      ],
+      "source": "https://github.com/ppp-project/ppp.git",
+      "source_revision": "2587a678e61e94b6366f1a3be020644668a97000",
+      "version": "2.5.4~dev20260910-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/pppd/2.5.4/rp-pppoe.so"
+      ],
+      "depends": [
+        "libc",
+        "ppp",
+        "kmod-pppoe"
+      ],
+      "description": "ABI-matched upstream rp-pppoe plugin built atomically with pppd 2.5.4 development head",
+      "name": "ppp-mod-pppoe",
+      "replaces": [
+        "ppp-mod-pppoe"
+      ],
+      "retained_paths": [],
+      "source": "https://github.com/ppp-project/ppp.git",
+      "source_revision": "2587a678e61e94b6366f1a3be020644668a97000",
+      "version": "2.5.4~dev20260910-1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/etc/config/dhcp",
+        "/etc/dnsmasq.conf",
+        "/etc/hotplug.d/ntp/25-dnsmasqsec",
+        "/etc/init.d/dnsmasq",
+        "/usr/lib/dnsmasq/dhcp-script.sh",
+        "/usr/share/acl.d/dnsmasq_acl.json",
+        "/usr/share/dnsmasq/dhcpbogushostname.conf",
+        "/usr/share/dnsmasq/rfc6761.conf",
+        "/usr/sbin/dnsmasq"
+      ],
+      "depends": [
+        "libc",
+        "libgcc1",
+        "libubox20191228",
+        "libubus20210603",
+        "libnetfilter-conntrack3",
+        "libnfnetlink0",
+        "kmod-ipt-ipset"
+      ],
+      "description": "DNS and DHCP server with IPv6, IPSet, conntrack and UBus; built without DNSSEC and nftset",
+      "name": "dnsmasq-full",
+      "provides": [
+        "dnsmasq",
+        "dnsmasq-dhcpv6"
+      ],
+      "replaces": [
+        "dnsmasq-full",
+        "dnsmasq",
+        "dnsmasq-dhcpv6"
+      ],
+      "retained_paths": [],
+      "source": "https://thekelleys.org.uk/dnsmasq/dnsmasq-2.93.tar.xz",
+      "source_revision": "0c00d4e5c97c8306e5fb932b348b34269c9c29a0e7df0e8e82958b407092bc19",
+      "version": "2.93-1-qsdk3"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/miniupnpd"
+      ],
+      "depends": [
+        "libc",
+        "iptables",
+        "libip4tc2",
+        "libip6tc2",
+        "ip6tables",
+        "libuuid1",
+        "libcap",
+        "libmnl0",
+        "libnfnetlink0",
+        "libnetfilter-conntrack3"
+      ],
+      "description": "Official MiniUPnPd 2.3.11 built against the factory QSDK iptables ABI, retaining the reviewed OpenWrt service, firewall and default-off secure policy",
+      "name": "miniupnpd",
+      "replaces": [
+        "miniupnpd"
+      ],
+      "retained_paths": [
+        "/etc/config/upnpd",
+        "/etc/hotplug.d/iface/50-miniupnpd",
+        "/etc/init.d/miniupnpd",
+        "/etc/uci-defaults/99-miniupnpd",
+        "/usr/share/miniupnpd/firewall.include"
+      ],
+      "source": "https://github.com/miniupnp/miniupnp/releases/tag/miniupnpd_2_3_11",
+      "source_revision": "b91c025446d3ec3d9161cd56c91e200484af7906",
+      "version": "2.3.11-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/ntpdate"
+      ],
+      "depends": [
+        "libc",
+        "libpthread",
+        "libcap"
+      ],
+      "description": "Official NTP ntpdate 4.2.8p18 release-2 built with the locked QSDK ABI and no unused crypto or libevent dependency, driven only by the bounded local time policy",
+      "name": "ntpdate",
+      "replaces": [
+        "ntpdate"
+      ],
+      "retained_paths": [],
+      "source": "https://downloads.nwtime.org/ntp/ntp-4.2.8p18.tar.gz",
+      "source_revision": "cf84c5f3fb1a295284942624d823fffa634144e096cfc4f9969ac98ef5f468e5",
+      "version": "4.2.8p18-2-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/rpcd/rrdns.so"
+      ],
+      "depends": [
+        "libc",
+        "rpcd",
+        "libubox20191228",
+        "libubus20210603"
+      ],
+      "description": "Current-source reverse-DNS rpcd module with bounded input, local-resolver-only queries and no additional ACL payload",
+      "name": "rpcd-mod-rrdns",
+      "replaces": [
+        "rpcd-mod-rrdns"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/luci.git",
+      "source_revision": "22e4e76524046e21bb57b7595dda658bd41313a4",
+      "version": "20170710+2026.09.13~22e4e765-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/sbin/mtr",
+        "/usr/sbin/mtr-packet"
+      ],
+      "depends": [
+        "libc",
+        "libncurses6"
+      ],
+      "description": "Official mtr 0.96 CLI with IPv4, IPv6 and ncurses support; both executables are root-only mode 0700 and mtr-packet has no setuid, setgid or file capability",
+      "name": "mtr",
+      "replaces": [
+        "mtr"
+      ],
+      "retained_paths": [],
+      "source": "https://www.bitwizard.nl/mtr/files/mtr-0.96.tar.gz",
+      "source_revision": "f392168771570b0fdc104c38dea6bbc2ce585710",
+      "version": "0.96-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/bin/htop"
+      ],
+      "depends": [
+        "libc",
+        "libncurses6"
+      ],
+      "description": "Official htop 3.5.3 with Unicode and native Linux CPU-affinity support, built against the retained factory ncurses ABI without optional privileged or hardware-specific dependencies",
+      "name": "htop",
+      "replaces": [
+        "htop"
+      ],
+      "retained_paths": [],
+      "source": "https://github.com/htop-dev/htop/releases/tag/3.5.3",
+      "source_revision": "20882b8ef8271fb49ea0eb74bbfd484e9b0a11d8",
+      "version": "3.5.3-1-sbe1"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/bin/nano"
+      ],
+      "depends": [
+        "libc",
+        "libncurses6"
+      ],
+      "description": "Official GNU nano 9.2 with UTF-8, help, multiple buffers, file browser, nanorc, color, mouse and completion, while external formatter, linter and speller execution remains disabled",
+      "name": "nano",
+      "replaces": [
+        "nano"
+      ],
+      "retained_paths": [],
+      "source": "https://www.nano-editor.org/dist/v9/nano-9.2.tar.xz",
+      "source_revision": "8e6360d1663998c62ddd0cf934923d1f18004e3e",
+      "version": "9.2-1-sbe1"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/config/ddns",
+        "/etc/ddns/services",
+        "/etc/ddns/services_ipv6",
+        "/etc/hotplug.d/iface/95-ddns",
+        "/etc/init.d/ddns",
+        "/etc/uci-defaults/ddns",
+        "/usr/lib/ddns/dynamic_dns_functions.sh",
+        "/usr/lib/ddns/dynamic_dns_lucihelper.sh",
+        "/usr/lib/ddns/dynamic_dns_updater.sh"
+      ],
+      "depends": [],
+      "description": "Dynamic DNS Client scripts (with IPv6 support) - Info: https://openwrt.org/docs/guide-user/services/ddns/client",
+      "name": "ddns-scripts",
+      "replaces": [
+        "ddns-scripts",
+        "sbe-ddns-cloudflare"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/packages.git",
+      "source_revision": "fe5947b6e21b083f6858009b8a59c8fd153d896d",
+      "version": "2.7.8-14"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/ddns_cloudflare.com-v4",
+        "/usr/lib/ddns/update_cloudflare_com_v4.sh"
+      ],
+      "depends": [
+        "ddns-scripts",
+        "curl"
+      ],
+      "description": "Dynamic DNS Client scripts extension for CloudFlare.com API-v4 (require/install cURL)",
+      "name": "ddns-scripts_cloudflare.com-v4",
+      "replaces": [
+        "ddns-scripts_cloudflare.com-v4"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/packages.git",
+      "source_revision": "fe5947b6e21b083f6858009b8a59c8fd153d896d",
+      "version": "2.7.8-14"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/model/ipkg.lua"
+      ],
+      "depends": [
+        "libc",
+        "luci-base"
+      ],
+      "description": "Legacy opkg interface class",
+      "name": "luci-lib-ipkg",
+      "replaces": [
+        "luci-lib-ipkg"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-1"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/40_luci-ddns",
+        "/usr/lib/lua/luci/controller/ddns.lua",
+        "/usr/lib/lua/luci/model/cbi/ddns/detail.lua",
+        "/usr/lib/lua/luci/model/cbi/ddns/global.lua",
+        "/usr/lib/lua/luci/model/cbi/ddns/hints.lua",
+        "/usr/lib/lua/luci/model/cbi/ddns/overview.lua",
+        "/usr/lib/lua/luci/tools/ddns.lua",
+        "/usr/lib/lua/luci/view/admin_status/index/ddns.htm",
+        "/usr/lib/lua/luci/view/ddns/detail_logview.htm",
+        "/usr/lib/lua/luci/view/ddns/detail_lvalue.htm",
+        "/usr/lib/lua/luci/view/ddns/detail_value.htm",
+        "/usr/lib/lua/luci/view/ddns/global_value.htm",
+        "/usr/lib/lua/luci/view/ddns/overview_doubleline.htm",
+        "/usr/lib/lua/luci/view/ddns/overview_enabled.htm",
+        "/usr/lib/lua/luci/view/ddns/overview_startstop.htm",
+        "/usr/lib/lua/luci/view/ddns/overview_status.htm",
+        "/usr/lib/lua/luci/view/ddns/system_status.htm"
+      ],
+      "depends": [
+        "libc",
+        "luci-compat",
+        "luci-lib-ipkg",
+        "luci-mod-admin-full",
+        "ddns-scripts"
+      ],
+      "description": "LuCI Support for Dynamic DNS Client (ddns-scripts)",
+      "name": "luci-app-ddns",
+      "replaces": [
+        "luci-app-ddns",
+        "sbe-luci-app-ddns"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "2.4.9-7"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/luci-i18n-ddns-zh-cn",
+        "/usr/lib/lua/luci/i18n/ddns.zh-cn.lmo"
+      ],
+      "depends": [
+        "libc",
+        "luci-app-ddns"
+      ],
+      "description": "Translation for luci-app-ddns - 中文 (Chinese)",
+      "name": "luci-i18n-ddns-zh-cn",
+      "replaces": [
+        "luci-i18n-ddns-zh-cn"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "2.4.9-7"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/liblua.so.5.1.5"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "Lua is a powerful light-weight programming language designed for extending applications. Lua is also frequently used as a general-purpose, stand-alone language. Lua is free software. This package contains the Lua shared libraries, needed by other programs.",
+      "name": "liblua5.1.5",
+      "provides": [
+        "liblua"
+      ],
+      "replaces": [
+        "liblua5.1.5"
+      ],
+      "retained_paths": [],
+      "source": "https://www.lua.org/ftp/lua-5.1.5.tar.gz",
+      "source_revision": "2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333",
+      "version": "5.1.5-4"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/bin/lua"
+      ],
+      "depends": [
+        "libc",
+        "liblua5.1.5"
+      ],
+      "description": "Lua is a powerful light-weight programming language designed for extending applications. Lua is also frequently used as a general-purpose, stand-alone language. Lua is free software. This package contains the Lua language interpreter.",
+      "name": "lua",
+      "replaces": [
+        "lua"
+      ],
+      "retained_paths": [],
+      "source": "https://www.lua.org/ftp/lua-5.1.5.tar.gz",
+      "source_revision": "2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333",
+      "version": "5.1.5-4"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/ubus.so"
+      ],
+      "depends": [
+        "libc",
+        "libubus20210603",
+        "liblua5.1.5"
+      ],
+      "description": "Lua binding for the OpenWrt RPC client",
+      "name": "libubus-lua",
+      "replaces": [
+        "libubus-lua"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/ubus.git",
+      "source_revision": "b32a0e17b37847e8357b53a358d1311bfc3ad5d2",
+      "version": "2022-02-21-b32a0e17-2"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/lib/libuci.so"
+      ],
+      "depends": [
+        "libc",
+        "libubox20191228"
+      ],
+      "description": "C library for the Unified Configuration Interface (UCI)",
+      "name": "libuci20130104",
+      "provides": [
+        "libuci"
+      ],
+      "replaces": [
+        "libuci20130104"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/uci.git",
+      "source_revision": "415f9e48436d29f612348f58f546b3ad8d74ac38",
+      "version": "2019-09-01-415f9e48-5"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/uci.so"
+      ],
+      "depends": [
+        "libc",
+        "libuci20130104",
+        "liblua5.1.5"
+      ],
+      "description": "Lua plugin for UCI",
+      "name": "libuci-lua",
+      "replaces": [
+        "libuci-lua"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/uci.git",
+      "source_revision": "415f9e48436d29f612348f58f546b3ad8d74ac38",
+      "version": "2019-09-01-415f9e48-5"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/libiwinfo.so",
+        "/usr/share/libiwinfo/hardware.txt"
+      ],
+      "depends": [
+        "libc",
+        "libnl-tiny",
+        "libuci20130104",
+        "libubus20210603"
+      ],
+      "description": "Wireless information library with consistent interface for proprietary Broadcom, nl80211 and wext driver interfaces.",
+      "name": "libiwinfo20181126",
+      "provides": [
+        "libiwinfo"
+      ],
+      "replaces": [
+        "libiwinfo20181126"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/iwinfo.git",
+      "source_revision": "07315b6fdb2566a8626d8a1e4de76eb30456fe17",
+      "version": "2019-10-16-07315b6f-3"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/iwinfo.so"
+      ],
+      "depends": [
+        "libc",
+        "libiwinfo20181126",
+        "liblua5.1.5"
+      ],
+      "description": "This is the Lua binding for the iwinfo library. It provides access to all enabled backends.",
+      "name": "libiwinfo-lua",
+      "replaces": [
+        "libiwinfo-lua"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/iwinfo.git",
+      "source_revision": "07315b6fdb2566a8626d8a1e4de76eb30456fe17",
+      "version": "2019-10-16-07315b6f-3"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/controller/firewall.lua",
+        "/usr/share/rpcd/acl.d/luci-app-openvpn.json",
+        "/www/luci-static/resources/tools/firewall.js",
+        "/www/luci-static/resources/view/firewall/custom.js",
+        "/www/luci-static/resources/view/firewall/forwards.js",
+        "/www/luci-static/resources/view/firewall/rules.js",
+        "/www/luci-static/resources/view/firewall/snats.js",
+        "/www/luci-static/resources/view/firewall/zones.js"
+      ],
+      "depends": [
+        "libc",
+        "firewall"
+      ],
+      "description": "Firewall and Portforwarding application",
+      "name": "luci-app-firewall",
+      "replaces": [
+        "luci-app-firewall"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/controller/opkg.lua",
+        "/usr/lib/lua/luci/view/opkg.htm",
+        "/www/luci-static/resources/view/opkg.js"
+      ],
+      "depends": [
+        "libc",
+        "opkg"
+      ],
+      "description": "OPKG package management application",
+      "name": "luci-app-opkg",
+      "replaces": [
+        "luci-app-opkg"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/40_luci-miniupnp",
+        "/usr/lib/lua/luci/controller/upnp.lua",
+        "/usr/lib/lua/luci/model/cbi/upnp/upnp.lua",
+        "/usr/lib/lua/luci/view/admin_status/index/upnp.htm",
+        "/usr/lib/lua/luci/view/upnp_status.htm"
+      ],
+      "depends": [
+        "libc",
+        "luci-compat",
+        "miniupnpd"
+      ],
+      "description": "Universal Plug & Play configuration module",
+      "name": "luci-app-upnp",
+      "replaces": [
+        "luci-app-upnp"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/etc/config/luci",
+        "/etc/config/ucitrack",
+        "/etc/init.d/ucitrack",
+        "/etc/luci-uploads/.placeholder",
+        "/lib/upgrade/keep.d/luci-base",
+        "/sbin/luci-reload",
+        "/usr/lib/lua/luci/cacheloader.lua",
+        "/usr/lib/lua/luci/ccache.lua",
+        "/usr/lib/lua/luci/config.lua",
+        "/usr/lib/lua/luci/controller/admin/index.lua",
+        "/usr/lib/lua/luci/controller/admin/uci.lua",
+        "/usr/lib/lua/luci/debug.lua",
+        "/usr/lib/lua/luci/dispatcher.lua",
+        "/usr/lib/lua/luci/http.lua",
+        "/usr/lib/lua/luci/i18n.lua",
+        "/usr/lib/lua/luci/ltn12.lua",
+        "/usr/lib/lua/luci/model/uci.lua",
+        "/usr/lib/lua/luci/sgi/cgi.lua",
+        "/usr/lib/lua/luci/sgi/uhttpd.lua",
+        "/usr/lib/lua/luci/store.lua",
+        "/usr/lib/lua/luci/sys.lua",
+        "/usr/lib/lua/luci/sys/zoneinfo.lua",
+        "/usr/lib/lua/luci/sys/zoneinfo/tzdata.lua",
+        "/usr/lib/lua/luci/sys/zoneinfo/tzoffset.lua",
+        "/usr/lib/lua/luci/template.lua",
+        "/usr/lib/lua/luci/template/parser.so",
+        "/usr/lib/lua/luci/util.lua",
+        "/usr/lib/lua/luci/version.lua",
+        "/usr/lib/lua/luci/view/csrftoken.htm",
+        "/usr/lib/lua/luci/view/empty_node_placeholder.htm",
+        "/usr/lib/lua/luci/view/error404.htm",
+        "/usr/lib/lua/luci/view/error500.htm",
+        "/usr/lib/lua/luci/view/footer.htm",
+        "/usr/lib/lua/luci/view/header.htm",
+        "/usr/lib/lua/luci/view/indexer.htm",
+        "/usr/lib/lua/luci/view/sysauth.htm",
+        "/usr/lib/lua/luci/view/view.htm",
+        "/usr/libexec/rpcd/luci",
+        "/usr/share/acl.d/luci-base.json",
+        "/usr/share/luci/menu.d/luci-base.json",
+        "/usr/share/rpcd/acl.d/luci-base.json",
+        "/www/cgi-bin/luci",
+        "/www/index.html",
+        "/www/luci-static/resources/cbi.js",
+        "/www/luci-static/resources/cbi/file.svg",
+        "/www/luci-static/resources/cbi/folder.svg",
+        "/www/luci-static/resources/cbi/link.svg",
+        "/www/luci-static/resources/firewall.js",
+        "/www/luci-static/resources/form.js",
+        "/www/luci-static/resources/fs.js",
+        "/www/luci-static/resources/icons/alias.png",
+        "/www/luci-static/resources/icons/alias_disabled.png",
+        "/www/luci-static/resources/icons/bridge.png",
+        "/www/luci-static/resources/icons/bridge_disabled.png",
+        "/www/luci-static/resources/icons/ethernet.png",
+        "/www/luci-static/resources/icons/ethernet_disabled.png",
+        "/www/luci-static/resources/icons/loading.gif",
+        "/www/luci-static/resources/icons/port_down.png",
+        "/www/luci-static/resources/icons/port_up.png",
+        "/www/luci-static/resources/icons/signal-0-25.png",
+        "/www/luci-static/resources/icons/signal-0.png",
+        "/www/luci-static/resources/icons/signal-25-50.png",
+        "/www/luci-static/resources/icons/signal-50-75.png",
+        "/www/luci-static/resources/icons/signal-75-100.png",
+        "/www/luci-static/resources/icons/signal-none.png",
+        "/www/luci-static/resources/icons/switch.png",
+        "/www/luci-static/resources/icons/switch_disabled.png",
+        "/www/luci-static/resources/icons/tunnel.png",
+        "/www/luci-static/resources/icons/tunnel_disabled.png",
+        "/www/luci-static/resources/icons/vlan.png",
+        "/www/luci-static/resources/icons/vlan_disabled.png",
+        "/www/luci-static/resources/icons/wifi.png",
+        "/www/luci-static/resources/icons/wifi_disabled.png",
+        "/www/luci-static/resources/luci.js",
+        "/www/luci-static/resources/network.js",
+        "/www/luci-static/resources/promis.min.js",
+        "/www/luci-static/resources/protocol/dhcp.js",
+        "/www/luci-static/resources/protocol/none.js",
+        "/www/luci-static/resources/protocol/static.js",
+        "/www/luci-static/resources/rpc.js",
+        "/www/luci-static/resources/tools/prng.js",
+        "/www/luci-static/resources/tools/widgets.js",
+        "/www/luci-static/resources/uci.js",
+        "/www/luci-static/resources/ui.js",
+        "/www/luci-static/resources/validation.js",
+        "/www/luci-static/resources/xhr.js"
+      ],
+      "depends": [
+        "libc",
+        "lua",
+        "luci-lib-nixio",
+        "luci-lib-ip",
+        "rpcd",
+        "libubus-lua",
+        "luci-lib-jsonc",
+        "liblucihttp-lua",
+        "rpcd-mod-file",
+        "rpcd-mod-luci",
+        "cgi-io"
+      ],
+      "description": "LuCI core libraries",
+      "name": "luci-base",
+      "replaces": [
+        "luci-base"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/cbi.lua",
+        "/usr/lib/lua/luci/cbi/datatypes.lua",
+        "/usr/lib/lua/luci/model/firewall.lua",
+        "/usr/lib/lua/luci/model/network.lua",
+        "/usr/lib/lua/luci/model/network/proto_3g.lua",
+        "/usr/lib/lua/luci/model/network/proto_4x6.lua",
+        "/usr/lib/lua/luci/model/network/proto_6x4.lua",
+        "/usr/lib/lua/luci/model/network/proto_dhcpv6.lua",
+        "/usr/lib/lua/luci/model/network/proto_hnet.lua",
+        "/usr/lib/lua/luci/model/network/proto_ipip.lua",
+        "/usr/lib/lua/luci/model/network/proto_modemmanager.lua",
+        "/usr/lib/lua/luci/model/network/proto_ncm.lua",
+        "/usr/lib/lua/luci/model/network/proto_openconnect.lua",
+        "/usr/lib/lua/luci/model/network/proto_ppp.lua",
+        "/usr/lib/lua/luci/model/network/proto_pppossh.lua",
+        "/usr/lib/lua/luci/model/network/proto_qmi.lua",
+        "/usr/lib/lua/luci/model/network/proto_relay.lua",
+        "/usr/lib/lua/luci/model/network/proto_vpnc.lua",
+        "/usr/lib/lua/luci/model/network/proto_wireguard.lua",
+        "/usr/lib/lua/luci/tools/webadmin.lua",
+        "/usr/lib/lua/luci/view/cbi/browser.htm",
+        "/usr/lib/lua/luci/view/cbi/button.htm",
+        "/usr/lib/lua/luci/view/cbi/cell_valuefooter.htm",
+        "/usr/lib/lua/luci/view/cbi/cell_valueheader.htm",
+        "/usr/lib/lua/luci/view/cbi/compound.htm",
+        "/usr/lib/lua/luci/view/cbi/delegator.htm",
+        "/usr/lib/lua/luci/view/cbi/dropdown.htm",
+        "/usr/lib/lua/luci/view/cbi/dvalue.htm",
+        "/usr/lib/lua/luci/view/cbi/dynlist.htm",
+        "/usr/lib/lua/luci/view/cbi/error.htm",
+        "/usr/lib/lua/luci/view/cbi/firewall_zonelist.htm",
+        "/usr/lib/lua/luci/view/cbi/footer.htm",
+        "/usr/lib/lua/luci/view/cbi/full_valuefooter.htm",
+        "/usr/lib/lua/luci/view/cbi/full_valueheader.htm",
+        "/usr/lib/lua/luci/view/cbi/fvalue.htm",
+        "/usr/lib/lua/luci/view/cbi/header.htm",
+        "/usr/lib/lua/luci/view/cbi/ipaddr.htm",
+        "/usr/lib/lua/luci/view/cbi/lvalue.htm",
+        "/usr/lib/lua/luci/view/cbi/map.htm",
+        "/usr/lib/lua/luci/view/cbi/mvalue.htm",
+        "/usr/lib/lua/luci/view/cbi/network_ifacelist.htm",
+        "/usr/lib/lua/luci/view/cbi/network_netinfo.htm",
+        "/usr/lib/lua/luci/view/cbi/network_netlist.htm",
+        "/usr/lib/lua/luci/view/cbi/nsection.htm",
+        "/usr/lib/lua/luci/view/cbi/nullsection.htm",
+        "/usr/lib/lua/luci/view/cbi/simpleform.htm",
+        "/usr/lib/lua/luci/view/cbi/tabcontainer.htm",
+        "/usr/lib/lua/luci/view/cbi/tblsection.htm",
+        "/usr/lib/lua/luci/view/cbi/tsection.htm",
+        "/usr/lib/lua/luci/view/cbi/tvalue.htm",
+        "/usr/lib/lua/luci/view/cbi/ucisection.htm",
+        "/usr/lib/lua/luci/view/cbi/upload.htm",
+        "/usr/lib/lua/luci/view/cbi/value.htm",
+        "/usr/lib/lua/luci/view/cbi/valuefooter.htm",
+        "/usr/lib/lua/luci/view/cbi/valueheader.htm",
+        "/usr/lib/lua/luci/view/cbi/wireless_modefreq.htm",
+        "/www/luci-static/resources/cbi/add.gif",
+        "/www/luci-static/resources/cbi/apply.gif",
+        "/www/luci-static/resources/cbi/arrow.gif",
+        "/www/luci-static/resources/cbi/down.gif",
+        "/www/luci-static/resources/cbi/download.gif",
+        "/www/luci-static/resources/cbi/edit.gif",
+        "/www/luci-static/resources/cbi/fieldadd.gif",
+        "/www/luci-static/resources/cbi/file.gif",
+        "/www/luci-static/resources/cbi/find.gif",
+        "/www/luci-static/resources/cbi/folder.gif",
+        "/www/luci-static/resources/cbi/help.gif",
+        "/www/luci-static/resources/cbi/key.gif",
+        "/www/luci-static/resources/cbi/link.gif",
+        "/www/luci-static/resources/cbi/reload.gif",
+        "/www/luci-static/resources/cbi/remove.gif",
+        "/www/luci-static/resources/cbi/reset.gif",
+        "/www/luci-static/resources/cbi/save.gif",
+        "/www/luci-static/resources/cbi/up.gif",
+        "/www/luci-static/resources/cbi/user.gif"
+      ],
+      "depends": [
+        "libc",
+        "luci-base"
+      ],
+      "description": "LuCI compatibility libraries",
+      "name": "luci-compat",
+      "replaces": [
+        "luci-compat"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/luci-i18n-base-zh-cn",
+        "/usr/lib/lua/luci/i18n/base.zh-cn.lmo"
+      ],
+      "depends": [
+        "libc",
+        "luci-base"
+      ],
+      "description": "Translation for luci-base - 中文 (Chinese)",
+      "name": "luci-i18n-base-zh-cn",
+      "replaces": [
+        "luci-i18n-base-zh-cn"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/luci-i18n-firewall-zh-cn",
+        "/usr/lib/lua/luci/i18n/firewall.zh-cn.lmo"
+      ],
+      "depends": [
+        "libc",
+        "luci-app-firewall"
+      ],
+      "description": "Translation for luci-app-firewall - 中文 (Chinese)",
+      "name": "luci-i18n-firewall-zh-cn",
+      "replaces": [
+        "luci-i18n-firewall-zh-cn"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/luci-i18n-opkg-zh-cn",
+        "/usr/lib/lua/luci/i18n/opkg.zh-cn.lmo"
+      ],
+      "depends": [
+        "libc",
+        "luci-app-opkg"
+      ],
+      "description": "Translation for luci-app-opkg - 中文 (Chinese)",
+      "name": "luci-i18n-opkg-zh-cn",
+      "replaces": [
+        "luci-i18n-opkg-zh-cn"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/luci-i18n-upnp-zh-cn",
+        "/usr/lib/lua/luci/i18n/upnp.zh-cn.lmo"
+      ],
+      "depends": [
+        "libc",
+        "luci-app-upnp"
+      ],
+      "description": "Translation for luci-app-upnp - 中文 (Chinese)",
+      "name": "luci-i18n-upnp-zh-cn",
+      "replaces": [
+        "luci-i18n-upnp-zh-cn"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/ip.so"
+      ],
+      "depends": [
+        "libc",
+        "liblua5.1.5",
+        "libnl-tiny"
+      ],
+      "description": "Lua library for IP calculation and routing information",
+      "name": "luci-lib-ip",
+      "replaces": [
+        "luci-lib-ip"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/jsonc.so"
+      ],
+      "depends": [
+        "libc",
+        "liblua5.1.5",
+        "libjson-c2"
+      ],
+      "description": "Lua binding for JSON-C",
+      "name": "luci-lib-jsonc",
+      "replaces": [
+        "luci-lib-jsonc"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/lib/upgrade/luci-add-conffiles.sh",
+        "/usr/lib/lua/nixio.so",
+        "/usr/lib/lua/nixio/fs.lua",
+        "/usr/lib/lua/nixio/util.lua"
+      ],
+      "depends": [
+        "libc",
+        "liblua5.1.5"
+      ],
+      "description": "NIXIO POSIX library",
+      "name": "luci-lib-nixio",
+      "replaces": [
+        "luci-lib-nixio"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [],
+      "depends": [
+        "libc",
+        "luci-base",
+        "luci-mod-status",
+        "luci-mod-system",
+        "luci-mod-network"
+      ],
+      "description": "LuCI Administration - full-featured for full control",
+      "metadata_only": true,
+      "name": "luci-mod-admin-full",
+      "replaces": [
+        "luci-mod-admin-full"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/50_luci-mod-admin-full",
+        "/usr/lib/lua/luci/controller/admin/network.lua",
+        "/usr/libexec/luci-peeraddr",
+        "/www/luci-static/resources/view/network/dhcp.js",
+        "/www/luci-static/resources/view/network/diagnostics.js",
+        "/www/luci-static/resources/view/network/hosts.js",
+        "/www/luci-static/resources/view/network/interfaces.js",
+        "/www/luci-static/resources/view/network/routes.js",
+        "/www/luci-static/resources/view/network/switch.js",
+        "/www/luci-static/resources/view/network/wireless.js"
+      ],
+      "depends": [
+        "libc",
+        "luci-base",
+        "libiwinfo-lua",
+        "rpcd-mod-iwinfo"
+      ],
+      "description": "LuCI Network Administration",
+      "name": "luci-mod-network",
+      "replaces": [
+        "luci-mod-network"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-9"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/bin/luci-bwc",
+        "/usr/lib/lua/luci/view/admin_status/index.htm",
+        "/usr/share/luci/menu.d/luci-mod-status.json",
+        "/www/luci-static/resources/bandwidth.svg",
+        "/www/luci-static/resources/connections.svg",
+        "/www/luci-static/resources/load.svg",
+        "/www/luci-static/resources/view/status/bandwidth.js",
+        "/www/luci-static/resources/view/status/connections.js",
+        "/www/luci-static/resources/view/status/dmesg.js",
+        "/www/luci-static/resources/view/status/include/10_system.js",
+        "/www/luci-static/resources/view/status/include/20_memory.js",
+        "/www/luci-static/resources/view/status/include/30_network.js",
+        "/www/luci-static/resources/view/status/include/40_dhcp.js",
+        "/www/luci-static/resources/view/status/include/50_dsl.js",
+        "/www/luci-static/resources/view/status/include/60_wifi.js",
+        "/www/luci-static/resources/view/status/index.js",
+        "/www/luci-static/resources/view/status/iptables.js",
+        "/www/luci-static/resources/view/status/load.js",
+        "/www/luci-static/resources/view/status/processes.js",
+        "/www/luci-static/resources/view/status/routes.js",
+        "/www/luci-static/resources/view/status/syslog.js",
+        "/www/luci-static/resources/view/status/wireless.js",
+        "/www/luci-static/resources/wifirate.svg",
+        "/www/luci-static/resources/wireless.svg"
+      ],
+      "depends": [
+        "libc",
+        "luci-base",
+        "libiwinfo20181126",
+        "libiwinfo-lua"
+      ],
+      "description": "LuCI Status Pages",
+      "name": "luci-mod-status",
+      "replaces": [
+        "luci-mod-status"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/usr/lib/lua/luci/model/cbi/admin_system/backupfiles.lua",
+        "/usr/share/luci/menu.d/luci-mod-system.json",
+        "/www/luci-static/resources/view/system/crontab.js",
+        "/www/luci-static/resources/view/system/dropbear.js",
+        "/www/luci-static/resources/view/system/flash.js",
+        "/www/luci-static/resources/view/system/leds.js",
+        "/www/luci-static/resources/view/system/mounts.js",
+        "/www/luci-static/resources/view/system/password.js",
+        "/www/luci-static/resources/view/system/reboot.js",
+        "/www/luci-static/resources/view/system/sshkeys.js",
+        "/www/luci-static/resources/view/system/startup.js",
+        "/www/luci-static/resources/view/system/system.js"
+      ],
+      "depends": [
+        "libc",
+        "luci-base"
+      ],
+      "description": "LuCI Administration - Global System Settings",
+      "name": "luci-mod-system",
+      "replaces": [
+        "luci-mod-system"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/www/luci-static/resources/protocol/464xlat.js",
+        "/www/luci-static/resources/protocol/6in4.js",
+        "/www/luci-static/resources/protocol/6rd.js",
+        "/www/luci-static/resources/protocol/6to4.js",
+        "/www/luci-static/resources/protocol/dhcpv6.js",
+        "/www/luci-static/resources/protocol/dslite.js",
+        "/www/luci-static/resources/protocol/map.js"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "Support for DHCPv6/6in4/6to4/6rd/DS-Lite",
+      "name": "luci-proto-ipv6",
+      "replaces": [
+        "luci-proto-ipv6"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/www/luci-static/resources/protocol/l2tp.js",
+        "/www/luci-static/resources/protocol/ppp.js",
+        "/www/luci-static/resources/protocol/pppoa.js",
+        "/www/luci-static/resources/protocol/pppoe.js",
+        "/www/luci-static/resources/protocol/pptp.js"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "Support for PPP/PPPoE/PPPoA/PPtP",
+      "name": "luci-proto-ppp",
+      "replaces": [
+        "luci-proto-ppp"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/www/luci-static/resources/protocol/vxlan.js",
+        "/www/luci-static/resources/protocol/vxlan6.js"
+      ],
+      "depends": [
+        "libc",
+        "vxlan"
+      ],
+      "description": "Support for Virtual eXtensible Local Area Network (VXLAN, RFC7348)",
+      "name": "luci-proto-vxlan",
+      "replaces": [
+        "luci-proto-vxlan"
+      ],
+      "retained_paths": [],
+      "source": "https://git.openwrt.org/project/luci.git",
+      "source_revision": "6dd22ec98da0b71f00caa5712456606adeff7811",
+      "version": "git-20.153.52583-6dd22ec-1"
+    },
+    {
+      "architecture": "all",
+      "candidate_paths": [
+        "/etc/uci-defaults/30_luci-theme-bootstrap",
+        "/usr/lib/lua/luci/view/themes/bootstrap/footer.htm",
+        "/usr/lib/lua/luci/view/themes/bootstrap/header.htm",
+        "/www/luci-static/bootstrap/cascade.css",
+        "/www/luci-static/bootstrap/favicon.png",
+        "/www/luci-static/bootstrap/mobile.css",
+        "/www/luci-static/resources/menu-bootstrap.js"
+      ],
+      "depends": [
+        "libc"
+      ],
+      "description": "Bootstrap Theme (default)",
+      "name": "luci-theme-bootstrap",
+      "replaces": [
+        "luci-theme-bootstrap"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "git-22.283.16672-4b50d79-8"
+    },
+    {
+      "architecture": "aarch64_cortex-a73_neon-vfpv4",
+      "candidate_paths": [
+        "/usr/lib/rpcd/luci.so"
+      ],
+      "depends": [
+        "libc",
+        "rpcd",
+        "libubox20191228",
+        "libubus20210603",
+        "libnl-tiny"
+      ],
+      "description": "Provides LuCI backend ubus RPC operations.",
+      "name": "rpcd-mod-luci",
+      "replaces": [
+        "rpcd-mod-luci"
+      ],
+      "retained_paths": [],
+      "source": "https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git",
+      "source_revision": "4b50d7975bd312fd0e5b28b95b67fb372cfa9da7",
+      "version": "20201107-2"
+    }
+  ],
+  "release_state": "production"
+}

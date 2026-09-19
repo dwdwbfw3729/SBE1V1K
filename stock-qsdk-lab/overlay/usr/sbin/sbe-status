@@ -1,0 +1,448 @@
+#!/usr/bin/lua
+
+-- Read-only status collector for the SBE1V1K QSDK image.  Keep this program
+-- free of os.execute(), io.popen() and user supplied paths: LuCI is granted
+-- permission to execute exactly `sbe-status --json` and nothing else.
+
+if #arg ~= 1 or arg[1] ~= "--json" then
+	io.stderr:write("usage: sbe-status --json\n")
+	os.exit(2)
+end
+
+local json = require "luci.jsonc"
+local fs = require "nixio.fs"
+
+local function read_file(path, limit)
+	local file = io.open(path, "r")
+	if not file then
+		return nil
+	end
+	local value = file:read(limit or 65536)
+	file:close()
+	return value
+end
+
+local function trimmed(value)
+	if value == nil then
+		return nil
+	end
+	return value:match("^%s*(.-)%s*$")
+end
+
+local function read_trimmed(path)
+	return trimmed(read_file(path, 4096))
+end
+
+local function parse_key_values(path)
+	local result = {}
+	local contents = read_file(path, 65536)
+	if not contents then
+		return result, false
+	end
+	for line in contents:gmatch("[^\r\n]+") do
+		local key, value = line:match("^([%w_]+)=(.*)$")
+		if key then
+			result[key] = trimmed(value)
+		end
+	end
+	return result, true
+end
+
+local function parse_protected_state(path)
+	local metadata = fs.lstat(path)
+	if not metadata or metadata.type ~= "reg" or metadata.uid ~= 0 or
+	   metadata.modestr ~= "rw-------" or not metadata.size or metadata.size > 65536 then
+		return {}, false
+	end
+	local result = {}
+	local contents = read_file(path, 65536)
+	if not contents or contents == "" or contents:sub(-1) ~= "\n" or
+	   contents:find("\r", 1, true) or contents:find("\n\n", 1, true) then
+		return result, false
+	end
+	for line in contents:gmatch("[^\r\n]+") do
+		local key, value = line:match("^([%w_]+)=([^\r\n]*)$")
+		if not key or result[key] ~= nil then
+			return {}, false
+		end
+		result[key] = value
+	end
+	return result, true
+end
+
+local function integer_between(value, minimum, maximum)
+	if type(value) ~= "string" or not value:match("^%d+$") then
+		return false
+	end
+	local number = tonumber(value)
+	return number ~= nil and number >= minimum and number <= maximum
+end
+
+local function valid_flag(value)
+	return value == "0" or value == "1"
+end
+
+local function valid_thermal_state(state)
+	-- Optional for compatibility with status published before a service reload.
+	if state.sample_uptime_seconds ~= nil and
+	   not integer_between(state.sample_uptime_seconds, 0, 2147483647) then return false end
+	if state.early_fan_active ~= nil and not valid_flag(state.early_fan_active) then return false end
+	for _, key in ipairs({ "early_start_c", "early_release_c" }) do
+		if state[key] ~= nil and not integer_between(state[key], 0, 150) then return false end
+	end
+	if state.early_fan_rpm ~= nil and not integer_between(state.early_fan_rpm, 1500, 4700) then return false end
+	for _, key in ipairs({
+		"state", "policy_interval", "sensor_fault", "config_fault",
+		"config_fault_reason", "fan_fault", "fan_fault_reason", "fan_rpm_stale",
+		"radio_mask_fault", "fan_policy_rpm", "fan_target_rpm", "fan_actual_rpm",
+		"fan_rpm_age_seconds", "fan_rpm_max_age_seconds", "fan_minimum_rpm",
+		"fan_maximum_rpm", "fan_pwm_duty", "fan_bad_samples", "fan_good_samples",
+		"wifi0_temp", "wifi1_temp", "wifi2_temp", "cpu_temp", "iot_temp",
+		"radio_txchainmask", "temperature_sample_slot", "critical_state_samples",
+		"critical_action_attempted"
+	}) do
+		if state[key] == nil then
+			return false
+		end
+	end
+	if not integer_between(state.state, 0, 10) or state.policy_interval ~= "10" or
+	   not integer_between(state.fan_policy_rpm, 0, 4700) or
+	   not integer_between(state.fan_target_rpm, 0, 4700) or
+	   not integer_between(state.fan_minimum_rpm, 0, 4700) or
+	   not integer_between(state.fan_maximum_rpm, 0, 5700) or
+	   not integer_between(state.fan_bad_samples, 0, 30) or
+	   not integer_between(state.fan_good_samples, 0, 5) or
+	   not integer_between(state.temperature_sample_slot, 0, 3) or
+	   not integer_between(state.critical_state_samples, 0, 3) then
+		return false
+	end
+	for _, key in ipairs({
+		"sensor_fault", "config_fault", "fan_fault", "fan_rpm_stale",
+		"radio_mask_fault", "critical_action_attempted"
+	}) do
+		if not valid_flag(state[key]) then
+			return false
+		end
+	end
+	if state.fan_actual_rpm ~= "unknown" and
+	   not integer_between(state.fan_actual_rpm, 0, 20000) then
+		return false
+	end
+	if state.fan_rpm_age_seconds ~= "unknown" and
+	   not integer_between(state.fan_rpm_age_seconds, 0, 3600) then
+		return false
+	end
+	if state.fan_rpm_max_age_seconds ~= "12" or
+	   (state.fan_pwm_duty ~= "unknown" and not integer_between(state.fan_pwm_duty, 0, 40000)) or
+	   not state.config_fault_reason:match("^[%w_-]+$") or
+	   not state.fan_fault_reason:match("^[%w_-]+$") then
+		return false
+	end
+	for _, key in ipairs({ "wifi0_temp", "wifi1_temp", "wifi2_temp", "cpu_temp", "iot_temp" }) do
+		-- The factory PM rounding rule biases a one-sample window upward, so a
+		-- valid raw 150 C sample can be reported as an averaged 151 C value.
+		if state[key] ~= "x" and not integer_between(state[key], 0, 151) then
+			return false
+		end
+	end
+	local first, second, third = state.radio_txchainmask:match("^(%d+),(%d+),(%d+),0,0$")
+	local allowed = { ["1"] = true, ["3"] = true, ["7"] = true, ["15"] = true }
+	return allowed[first] == true and allowed[second] == true and allowed[third] == true
+end
+
+local function valid_led_state(state)
+	for _, key in ipairs({ "state", "pattern", "source", "base_state" }) do
+		if type(state[key]) ~= "string" or not state[key]:match("^[%w_-]+$") then
+			return false
+		end
+	end
+	return true
+end
+
+local function parse_release(path)
+	local result = {}
+	local contents = read_file(path, 32768)
+	if not contents then
+		return result
+	end
+	for line in contents:gmatch("[^\r\n]+") do
+		local key, quote, value = line:match("^([%w_]+)=(['\"]?)(.-)%2$")
+		if key then
+			result[key] = value
+		end
+	end
+	return result
+end
+
+local function number_or_false(value)
+	local number = tonumber(value)
+	if number == nil then
+		return false
+	end
+	return number
+end
+
+local function file_age(path)
+	local stat = fs.stat(path)
+	if not stat or not stat.mtime then
+		return false
+	end
+	local age = os.time() - stat.mtime
+	return age >= 0 and age or 0
+end
+
+local function thermal_history(state, uptime)
+	local contents, latest = state.history_samples, tonumber(state.sample_uptime_seconds)
+	if type(contents) ~= "string" or contents == "" or #contents > 8192 or
+	   not latest or latest > uptime or contents:find("[^%dxunkow,;]") or
+	   contents:sub(1, 1) == ";" or contents:sub(-1) == ";" or contents:find(";;", 1, true) then
+		return false
+	end
+	local rows, previous = {}, -1
+	local keys = { "time", "cpu", "wifi0", "wifi1", "wifi2", "iot", "actual", "target" }
+	for line in contents:gmatch("[^;]+") do
+		local values = {}
+		for value in (line .. ","):gmatch("([^,]*),") do values[#values + 1] = value end
+		if #values ~= 8 or #rows >= 91 or
+		   not integer_between(values[1], math.max(0, latest - 900), latest) then return false end
+		local time = tonumber(values[1])
+		if time <= previous then return false end
+		previous = time
+		local row = { time = time }
+		for i = 2, 8 do
+			local missing = i <= 6 and "x" or "unknown"
+			local maximum = i <= 6 and 151 or (i == 7 and 20000 or 4700)
+			if values[i] ~= missing and not integer_between(values[i], 0, maximum) then return false end
+			row[keys[i]] = number_or_false(values[i])
+		end
+		rows[#rows + 1] = row
+	end
+	if previous ~= latest then return false end
+	return rows
+end
+
+local function module_loaded(name)
+	return fs.stat("/sys/module/" .. name, "type") == "dir"
+end
+
+local function mount_information()
+	local root_source = "unknown"
+	local config_source = "none"
+	local emmc_read_write = false
+	local unexpected_emmc_read_write = false
+	local mounts = read_file("/proc/mounts", 131072) or ""
+
+	for line in mounts:gmatch("[^\r\n]+") do
+		local source, target, _, options = line:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+		if source then
+			if target == "/" then
+				root_source = source
+			elseif target == "/data" or target == "/overlay" then
+				config_source = source
+			end
+			if source:match("^/dev/mmcblk") and
+			   ("," .. options .. ","):match(",rw,") then
+				emmc_read_write = true
+				if source ~= "/dev/mmcblk0p30" or
+				   (target ~= "/data" and target ~= "/overlay") then
+					unexpected_emmc_read_write = true
+				end
+			end
+		end
+	end
+
+	return root_source, config_source, emmc_read_write,
+		unexpected_emmc_read_write
+end
+
+local function interface_runtime(name)
+	local state = read_trimmed("/sys/class/net/" .. name .. "/operstate") or "missing"
+	local carrier = read_trimmed("/sys/class/net/" .. name .. "/carrier")
+	local raw_flags = read_trimmed("/sys/class/net/" .. name .. "/flags") or ""
+	local flags = tonumber(raw_flags:gsub("^0[xX]", ""), 16) or 0
+	local running = math.floor(flags / 64) % 2 == 1
+	return state, carrier == "1" and running
+end
+
+local function uci_enabled(config, section, option)
+	local ok, uci_module = pcall(require, "uci")
+	if not ok then
+		return false
+	end
+	local cursor = uci_module.cursor()
+	local value = cursor:get(config, section, option)
+	cursor:unload(config)
+	return value == "1"
+end
+
+local function load_wireless()
+	local board_radios = {
+		{ section = "wifi0", interface = "ath0", label = "2.4 GHz" },
+		{ section = "wifi1", interface = "ath1", label = "6 GHz" },
+		{ section = "wifi2", interface = "ath2", label = "5 GHz" }
+	}
+	local ok, uci_module = pcall(require, "uci")
+	if not ok then
+		for _, radio in ipairs(board_radios) do
+			radio.available = false
+		end
+		return board_radios
+	end
+
+	local cursor = uci_module.cursor()
+	local interfaces = {}
+	pcall(function()
+		cursor:foreach("wireless", "wifi-iface", function(section)
+			local device = section.device
+			if device and not interfaces[device] then
+				interfaces[device] = {
+					ssid = section.ssid or "",
+					encryption = section.encryption or "unknown",
+					enabled = section.disabled ~= "1"
+				}
+			end
+		end)
+	end)
+
+	for _, radio in ipairs(board_radios) do
+		local section = cursor:get_all("wireless", radio.section)
+		local iface = interfaces[radio.section] or {}
+		local runtime_state, runtime_up = interface_runtime(radio.interface)
+		radio.available = section ~= nil
+		radio.enabled = section ~= nil and section.disabled ~= "1"
+		radio.ap_configured = iface.enabled == true
+		radio.ap_enabled = radio.enabled and radio.ap_configured and runtime_up
+		radio.runtime_state = runtime_state
+		radio.ssid = iface.ssid or ""
+		radio.encryption = iface.encryption or "unknown"
+		radio.channel = section and (section.channel or "auto") or "unknown"
+		radio.width = section and (section.htmode or "unknown") or "unknown"
+		radio.country = section and (section.country or "unset") or "unset"
+		radio.driver_present = fs.stat("/sys/class/net/" .. radio.section, "type") ~= nil
+	end
+
+	cursor:unload("wireless")
+	return board_radios
+end
+
+local thermal, thermal_available = parse_protected_state("/var/run/sbe-hardware/thermal.state")
+thermal_available = thermal_available and valid_thermal_state(thermal)
+if not thermal_available then thermal = {} end
+local led, led_available = parse_protected_state("/var/run/sbe-hardware/led.state")
+led_available = led_available and valid_led_state(led)
+if not led_available then led = {} end
+local watchdog, watchdog_available = parse_key_values("/var/run/sbe-watchdog/state")
+local release = parse_release("/etc/openwrt_release")
+local system_version = parse_release("/etc/system_version.info")
+local cmdline = read_trimmed("/proc/cmdline") or ""
+local root_source, config_source, emmc_read_write,
+	unexpected_emmc_read_write = mount_information()
+local ram_trial = cmdline:match("%f[%w]sbe_ram_trial=1%f[^%w]") ~= nil
+local persistent_explicit = cmdline:match("%f[%w]sbe_persistent=1%f[^%w]") ~= nil
+local persistent_chainloader = cmdline:match("%f[%w]root=/dev/mmcblk0p27%f[^%w]") ~= nil
+local persistent_requested = persistent_explicit or persistent_chainloader
+local overlay_mode = read_trimmed("/tmp/sbe-overlay-mode") or "unknown"
+local uptime = tonumber((read_trimmed("/proc/uptime") or ""):match("^(%S+)")) or 0
+local ovs_enabled = read_trimmed("/sys/module/qca_nss_ppe_bridge_mgr/parameters/ovs_enabled")
+
+local output = {
+	schema = 1,
+	device = {
+		model = "SBE1V1K",
+		sdk = system_version.SDK_VERSION or "SPF12.2CUS2",
+		firmware = release.DISTRIB_DESCRIPTION or release.DISTRIB_RELEASE or "unknown",
+		kernel = read_trimmed("/proc/sys/kernel/osrelease") or "unknown",
+		uptime_seconds = math.floor(uptime)
+	},
+	runtime = {
+		mode = overlay_mode,
+		ram_only = ram_trial,
+		persistent_requested = persistent_requested,
+		persistent_source = persistent_explicit and "boot-argument" or
+			(persistent_chainloader and "http-chainloader-p27" or "none"),
+		persistent_active = overlay_mode == "persistent",
+		root_source = root_source,
+		config_source = config_source,
+		emmc_read_write = emmc_read_write,
+		emmc_read_write_expected = overlay_mode == "persistent" and
+			config_source == "/dev/mmcblk0p30" and not unexpected_emmc_read_write,
+		unexpected_emmc_read_write = unexpected_emmc_read_write
+	},
+	thermal = {
+		available = thermal_available,
+		updated_seconds_ago = file_age("/var/run/sbe-hardware/thermal.state"),
+		state = number_or_false(thermal.state),
+		sample_uptime_seconds = number_or_false(thermal.sample_uptime_seconds),
+		history = thermal_history(thermal, uptime),
+		cooling_profile = thermal.cooling_profile == "balanced" and "balanced" or
+			(thermal.cooling_profile == "factory" and "factory" or "unknown"),
+		early_fan_active = thermal.early_fan_active == "1",
+		early_start_c = number_or_false(thermal.early_start_c),
+		early_release_c = number_or_false(thermal.early_release_c),
+		early_fan_rpm = number_or_false(thermal.early_fan_rpm),
+		policy_interval = number_or_false(thermal.policy_interval),
+		sensor_fault = thermal.sensor_fault == "1",
+		config_fault = thermal.config_fault == "1",
+		config_fault_reason = thermal.config_fault_reason or "none",
+		radio_mask_fault = thermal.radio_mask_fault == "1",
+		critical_state_samples = number_or_false(thermal.critical_state_samples),
+		critical_action_attempted = thermal.critical_action_attempted == "1",
+		temperatures_c = {
+			wifi0 = number_or_false(thermal.wifi0_temp),
+			wifi1 = number_or_false(thermal.wifi1_temp),
+			wifi2 = number_or_false(thermal.wifi2_temp),
+			cpu = number_or_false(thermal.cpu_temp),
+			iot = number_or_false(thermal.iot_temp)
+		},
+		fan = {
+			fault = thermal.fan_fault == "1",
+			policy_rpm = number_or_false(thermal.fan_policy_rpm),
+			target_rpm = number_or_false(thermal.fan_target_rpm),
+			actual_rpm = number_or_false(thermal.fan_actual_rpm),
+			rpm_age_seconds = number_or_false(thermal.fan_rpm_age_seconds),
+			rpm_stale = thermal.fan_rpm_stale == "1",
+			rpm_max_age_seconds = number_or_false(thermal.fan_rpm_max_age_seconds),
+			minimum_rpm = number_or_false(thermal.fan_minimum_rpm),
+			maximum_rpm = number_or_false(thermal.fan_maximum_rpm),
+			fault_reason = thermal.fan_fault_reason or "none",
+			pwm_duty = number_or_false(thermal.fan_pwm_duty),
+			bad_samples = number_or_false(thermal.fan_bad_samples),
+			good_samples = number_or_false(thermal.fan_good_samples)
+		},
+		radio_txchainmask = thermal.radio_txchainmask or "unknown"
+	},
+	led = {
+		available = led_available,
+		state = led.state or "unknown",
+		pattern = led.pattern or "unknown",
+		source = led.source or "unknown",
+		base_state = led.base_state or "unknown",
+		updated_seconds_ago = file_age("/var/run/sbe-hardware/led.state")
+	},
+	watchdog = {
+		enabled = uci_enabled("sbe-services", "watchdog", "enabled"),
+		available = watchdog_available,
+		health = watchdog.health or "unknown",
+		updated_seconds_ago = file_age("/var/run/sbe-watchdog/state"),
+		missing_processes = watchdog.missing_processes or "",
+		tmp_percent = number_or_false(watchdog.tmp_percent),
+		conntrack_percent = number_or_false(watchdog.conntrack_percent),
+		file_percent = number_or_false(watchdog.file_percent),
+		zombie_count = number_or_false(watchdog.zombie_count),
+		warnings = watchdog.warnings or ""
+	},
+	acceleration = {
+		nss = { loaded = module_loaded("qca_nss_dp"), module = "qca_nss_dp" },
+		ppe = { loaded = module_loaded("qca_nss_ppe"), module = "qca_nss_ppe" },
+		ecm = { loaded = module_loaded("ecm"), module = "ecm" },
+		ssdk = { loaded = module_loaded("qca_ssdk"), module = "qca_ssdk" },
+		ovs_dependency = {
+			loaded = module_loaded("openvswitch") and module_loaded("qca_ovsmgr"),
+			policy_enabled = ovs_enabled == "Y" or ovs_enabled == "1",
+			policy_value = ovs_enabled or "unavailable"
+		}
+	},
+	wireless = load_wireless()
+}
+
+io.write(json.stringify(output), "\n")

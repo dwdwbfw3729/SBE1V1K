@@ -1,0 +1,40 @@
+From 09d2df45bf3862fc259d5b1e1527c8777e2e5d23 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Sun, 3 May 2026 22:44:02 +0200
+Subject: [PATCH] ubusd: fix NULL dereference on OOM in ubus_msg_enqueue
+
+ubus_msg_ref() can return NULL when the source message uses an external
+buffer and the ubus_msg_new() allocation fails. ubus_msg_enqueue() stored
+the result without checking and queued the list entry anyway. Later, when
+the queue entry was freed via ubus_msg_list_free() -> ubus_msg_free(NULL),
+the NULL message pointer was dereferenced.
+
+Drop the queue entry and return early if the reference cannot be taken,
+so we never link a list entry with a NULL message.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/ubusd.c b/ubusd.c
+index 13557d1..c04ad82 100644
+--- a/ubusd.c
++++ b/ubusd.c
+@@ -153,6 +153,10 @@ static void ubus_msg_enqueue(struct ubus_client *cl, struct ubus_msg_buf *ub)
+ 
+ 	INIT_LIST_HEAD(&ubl->list);
+ 	ubl->msg = ubus_msg_ref(ub);
++	if (!ubl->msg) {
++		free(ubl);
++		return;
++	}
+ 
+ 	list_add_tail(&ubl->list, &cl->tx_queue);
+ 	cl->txq_len += ub->len + sizeof(ub->hdr);
+-- 
+2.54.0 (Apple Git-157)
+
+

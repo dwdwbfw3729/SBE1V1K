@@ -1,0 +1,38 @@
+From: SBE1V1K QSDK maintenance <local@invalid>
+Subject: [PATCH] luci-base: use the configured ubus POST endpoint directly
+
+The QSDK uhttpd ubus endpoint deliberately accepts JSON-RPC POST requests but
+returns 404 to GET. Probing it with GET therefore selected the legacy
+/admin/ubus fallback. Trust the server-provided ubus path, replace any stale
+cached fallback, and let the real RPC POST provide the authoritative error.
+
+---
+ modules/luci-base/htdocs/luci-static/resources/luci.js | 19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
+
+diff --git a/modules/luci-base/htdocs/luci-static/resources/luci.js b/modules/luci-base/htdocs/luci-static/resources/luci.js
+--- a/modules/luci-base/htdocs/luci-static/resources/luci.js
++++ b/modules/luci-base/htdocs/luci-static/resources/luci.js
+@@ -2526,17 +2526,6 @@ var LuCI = Class.extend(/** @lends LuCI.prototype */ {
+-			if (rpcBaseURL == null)
+-				rpcBaseURL = Session.getLocalData('rpcBaseURL');
+-
+-			if (rpcBaseURL == null) {
+-				var rpcFallbackURL = this.url('admin/ubus');
+-
+-				rpcBaseURL = Request.get(env.ubuspath).then(function(res) {
+-					return (rpcBaseURL = (res.status == 400) ? env.ubuspath : rpcFallbackURL);
+-				}, function() {
+-					return (rpcBaseURL = rpcFallbackURL);
+-				}).then(function(url) {
+-					Session.setLocalData('rpcBaseURL', url);
+-					return url;
+-				});
++			if (rpcBaseURL != env.ubuspath) {
++				rpcBaseURL = env.ubuspath;
++				Session.setLocalData('rpcBaseURL', rpcBaseURL);
+ 			}
+ 
+ 			return Promise.resolve(rpcBaseURL);
+-- 
+2.50.1

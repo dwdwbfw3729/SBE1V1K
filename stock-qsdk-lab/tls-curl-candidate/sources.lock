@@ -1,0 +1,39 @@
+# Official release inputs for the isolated modern TLS/curl candidate.
+# The OpenSSL release is an LTS line supported upstream through 2030-04-08.
+
+OPENSSL_VERSION=3.5.8
+OPENSSL_TAG=openssl-3.5.8
+OPENSSL_TAG_OBJECT=090eec6d3628aa0520bdf2cf97b063fafc34e7be
+OPENSSL_COMMIT=f4dc4d58b48d346a8270183f89acf826d459b0ca
+OPENSSL_ARCHIVE=openssl-3.5.8.tar.gz
+OPENSSL_URL=https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz
+OPENSSL_SHA256=a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
+OPENSSL_SIGNATURE=openssl-3.5.8.tar.gz.asc
+OPENSSL_SIGNATURE_URL=https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz.asc
+OPENSSL_SIGNATURE_SHA256=f4bfa84a290dfd5ad102a54ebc0f93f9b35359cb36c383769b5c7bc6034f1f65
+OPENSSL_CHECKSUM=openssl-3.5.8.tar.gz.sha256
+OPENSSL_CHECKSUM_URL=https://github.com/openssl/openssl/releases/download/openssl-3.5.8/openssl-3.5.8.tar.gz.sha256
+OPENSSL_CHECKSUM_SHA256=03917b1ef4b845cfee8a777ce963397fb777d198e6f4d1ca0e2608d8130926df
+OPENSSL_KEYRING=openssl-pubkeys.asc
+OPENSSL_KEYRING_URL=https://www.openssl-library.org/source/pubkeys.asc
+OPENSSL_KEYRING_SHA256=56e106cd1c44bdb117aec24795f6dfbecaa9bfa0a2901b85331f0059aad16d53
+OPENSSL_SIGNING_SUBKEY=C46ED3F2CBEFDA1FDAADA44264ED7B1DCCE71CB2
+OPENSSL_PRIMARY_KEY=B146647E45A7B33947AB226B2A2C87D161692D40
+
+CURL_VERSION=8.22.0
+CURL_TAG=curl-8_22_0
+CURL_TAG_OBJECT=d0386aa3e805543ce464c993e1eb31b4d92c6356
+CURL_COMMIT=01346829096c61b372692f6dc43ffa778c6caccd
+CURL_ARCHIVE=curl-8.22.0.tar.xz
+CURL_URL=https://curl.se/download/curl-8.22.0.tar.xz
+CURL_SHA256=f7ef3ae8a22e521f289803fe93543eb64c329b58aa73a9e224dfd915a2a5f4f7
+CURL_SIGNATURE=curl-8.22.0.tar.xz.asc
+CURL_SIGNATURE_URL=https://curl.se/download/curl-8.22.0.tar.xz.asc
+CURL_SIGNATURE_SHA256=ff9acdd6e48690d037b85337e42320b87aead3414ba83b75e77ec08d2eea908e
+CURL_KEYRING=curl-release-key.asc
+CURL_KEYRING_URL='https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x27edeaf22f3abceb50db9a125cc908fdb71e12c2'
+CURL_KEYRING_SHA256=a02c65495a46ce084162aa2143ebc588a136798ece5089ea85dce1d0691c87ef
+CURL_SIGNING_KEY=27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2
+
+# 2026-09-02 05:48:56 UTC, curl's release-signature timestamp.
+SOURCE_DATE_EPOCH=1788328136

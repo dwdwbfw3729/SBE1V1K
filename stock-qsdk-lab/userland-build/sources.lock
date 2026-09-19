@@ -1,0 +1,22 @@
+# Official source releases pinned for factory-QSDK userland candidates.
+# These are source inputs only; a matching hash does not approve a router
+# binary.  Target ELF, chroot and RAM-only hardware gates remain mandatory.
+
+MINIUPNPD_VERSION=2.3.11
+MINIUPNPD_TAG=miniupnpd_2_3_11
+MINIUPNPD_COMMIT=b91c025446d3ec3d9161cd56c91e200484af7906
+MINIUPNPD_ARCHIVE=miniupnpd-2.3.11.tar.gz
+MINIUPNPD_URL=https://github.com/miniupnp/miniupnp/releases/download/miniupnpd_2_3_11/miniupnpd-2.3.11.tar.gz
+MINIUPNPD_SHA256=91994b127da735b2c97f19992e34420648c0e8c4ace8a4bcb0596e7685c48678
+
+NTFS3G_VERSION=2026.7.7
+NTFS3G_TAG=2026.7.7
+NTFS3G_COMMIT=d327833ec1d5eb1358b6f2c37139f10a3460944d
+NTFS3G_ARCHIVE=ntfs-3g_ntfsprogs-2026.7.7.tgz
+NTFS3G_URL=https://download.tuxera.com/opensource/ntfs-3g_ntfsprogs-2026.7.7.tgz
+NTFS3G_SHA256=d67b769025d32860549d35c2147e45024d172f81c540d750390ce3602c059dab
+
+NTP_VERSION=4.2.8p18
+NTP_ARCHIVE=ntp-4.2.8p18.tar.gz
+NTP_URL=https://downloads.nwtime.org/ntp/ntp-4.2.8p18.tar.gz
+NTP_SHA256=cf84c5f3fb1a295284942624d823fffa634144e096cfc4f9969ac98ef5f468e5

@@ -1,0 +1,7 @@
+# content_tree_sha256	path relative to the locked QSDK root
+dc076cded604965d2d5abdd1a513c879e64ecf5a43d6c5df8246edb7a729af80	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/include/json-c
+773400b4c3dd02edcdc0cf04ab309e78a006a4e8e288916645334bc0953aa8c1	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/include/libnl-tiny
+# The shared libubox include directory also contains ustream-ssl.h installed by
+# the locked QSDK libustream-ssl (2020-03-13-40b563b1) dependency preparation.
+# All 18 original libubox headers remain byte-identical to its ipkg-install tree.
+994ffdad9655bf67e3e7c514708b750190e2ddc5c9abfb27a2db9edc34a2806e	staging_dir/target-aarch64_cortex-a73+neon-vfpv4_musl/usr/include/libubox

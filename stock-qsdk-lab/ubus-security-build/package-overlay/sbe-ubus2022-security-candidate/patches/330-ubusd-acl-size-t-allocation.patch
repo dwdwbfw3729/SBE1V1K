@@ -1,0 +1,36 @@
+From 020a64b9b1693295a3fde34147aef48bf47c76ae Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Thu, 21 May 2026 23:21:55 +0200
+Subject: [PATCH] ubusd_acl: use size_t for strlen result in
+ ubusd_acl_alloc_obj
+
+len held the result of strlen() in an int. It is later passed as
+len + 1 to calloc_a(), whose variadic length arguments are read via
+va_arg as size_t in __calloc_a(). Passing an int where size_t is
+expected is undefined behaviour and can yield a wrong allocation
+size on LP64 platforms.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_acl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ubusd_acl.c b/ubusd_acl.c
+index ec1aacb..3cef2ee 100644
+--- a/ubusd_acl.c
++++ b/ubusd_acl.c
+@@ -321,7 +321,7 @@ static struct ubusd_acl_obj*
+ ubusd_acl_alloc_obj(struct ubusd_acl_file *file, const char *obj)
+ {
+ 	struct ubusd_acl_obj *o;
+-	int len = strlen(obj);
++	size_t len = strlen(obj);
+ 	char *k;
+ 	bool partial = false;
+ 
+-- 
+2.54.0 (Apple Git-157)
+
+

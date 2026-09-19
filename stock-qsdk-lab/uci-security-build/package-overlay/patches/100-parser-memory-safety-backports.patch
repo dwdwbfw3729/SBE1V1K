@@ -1,0 +1,256 @@
+From: OpenWrt uci upstream (security backport bundle)
+Subject: [PATCH] parser, delta and stream memory-safety fixes since 415f9e48
+
+Backport-of: 2c8e4a347bb68229937ceda6e099fb10e9b792d1
+Backport-of: 9cf978bc79641691f0c603c71fcfa98c1626ce59
+Backport-of: aa5e77a13d955ac9b497efc015c957c475734f0d
+Backport-of: e8d83732f9eb571dce71aa915ff38a072579610b
+Backport-of: a3e650911f5e6f67dcff09974df3775dfd615da6
+Backport-of: 671c7554bfdeab758f605d1e1a2420117e96a628
+Backport-of: 7f574273180ac940c57da0f28c26a5274c165e48
+Backport-of: eae126f66663e5c73e5d290b8e3134449489340f
+
+The baseline QSDK package already carried a3e6509 and eae126f as two partial
+patches.  This bundle replaces those files and replays the complete dependency
+ordered source result.  The only adaptation is the %zu conversion in the older
+baseline uci_get_errorstr implementation, because cca6f105 is intentionally not
+backported.  No public declaration, enum or struct layout is added.
+
+--- a/delta.c
++++ b/delta.c
+@@ -391,7 +391,7 @@ static void uci_filter_delta(struct uci_context *ctx, const char *name, const ch
+ 				match = false;
+ 		}
+ 
+-		if (!match) {
++		if (!match && ptr.section) {
+ 			uci_add_delta(ctx, &list, c,
+ 				ptr.section, ptr.option, ptr.value);
+ 		}
+--- a/file.c
++++ b/file.c
+@@ -38,11 +38,11 @@
+ /*
+  * Fetch a new line from the input stream and resize buffer if necessary
+  */
+-__private void uci_getln(struct uci_context *ctx, int offset)
++__private void uci_getln(struct uci_context *ctx, size_t offset)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	char *p;
+-	int ofs;
++	size_t ofs;
+ 
+ 	if (pctx->buf == NULL) {
+ 		pctx->buf = uci_malloc(ctx, LINEBUF);
+@@ -64,6 +64,7 @@ __private void uci_getln(struct uci_context *ctx, int offset)
+ 			return;
+ 
+ 		ofs += strlen(p);
++		pctx->buf_filled = ofs;
+ 		if (pctx->buf[ofs - 1] == '\n') {
+ 			pctx->line++;
+ 			return;
+@@ -112,19 +113,28 @@ static void skip_whitespace(struct uci_context *ctx)
+ 		pctx->pos += 1;
+ }
+ 
+-static inline void addc(struct uci_context *ctx, int *pos_dest, int *pos_src)
++static inline void addc(struct uci_context *ctx, size_t *pos_dest, size_t *pos_src)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 
+ 	pctx_char(pctx, *pos_dest) = pctx_char(pctx, *pos_src);
+ 	*pos_dest += 1;
+ 	*pos_src += 1;
+ }
+ 
++static int uci_increase_pos(struct uci_parse_context *pctx, size_t add)
++{
++	if (pctx->pos + add > pctx->buf_filled)
++		return -EINVAL;
++
++	pctx->pos += add;
++	return 0;
++}
++
+ /*
+  * parse a double quoted string argument from the command line
+  */
+-static void parse_double_quote(struct uci_context *ctx, int *target)
++static void parse_double_quote(struct uci_context *ctx, size_t *target)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	char c;
+@@ -159,7 +169,7 @@ static void parse_double_quote(struct uci_context *ctx, int *target)
+ /*
+  * parse a single quoted string argument from the command line
+  */
+-static void parse_single_quote(struct uci_context *ctx, int *target)
++static void parse_single_quote(struct uci_context *ctx, size_t *target)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	char c;
+@@ -188,7 +198,7 @@ static void parse_single_quote(struct uci_context *ctx, int *target)
+ /*
+  * parse a string from the command line and detect the quoting style
+  */
+-static void parse_str(struct uci_context *ctx, int *target)
++static void parse_str(struct uci_context *ctx, size_t *target)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+ 	bool next = true;
+@@ -237,7 +247,7 @@ done:
+ static int next_arg(struct uci_context *ctx, bool required, bool name, bool package)
+ {
+ 	struct uci_parse_context *pctx = ctx->pctx;
+-	int val, ptr;
++	size_t val, ptr;
+ 
+ 	skip_whitespace(ctx);
+ 	val = ptr = pctx_pos(pctx);
+@@ -385,11 +395,12 @@ static void uci_parse_package(struct uci_context *ctx, bool single)
+ 	char *name;
+ 
+ 	/* command string null-terminated by strtok */
+-	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
++	if (uci_increase_pos(pctx, strlen(pctx_cur_str(pctx)) + 1))
++		uci_parse_error(ctx, "package without name");
+ 
+ 	ofs_name = next_arg(ctx, true, true, true);
+-	name = pctx_str(pctx, ofs_name);
+ 	assert_eol(ctx);
++	name = pctx_str(pctx, ofs_name);
+ 	if (single)
+ 		return;
+ 
+@@ -417,17 +428,18 @@ static void uci_parse_config(struct uci_context *ctx)
+ 	}
+ 
+ 	/* command string null-terminated by strtok */
+-	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
++	if (uci_increase_pos(pctx, strlen(pctx_cur_str(pctx)) + 1))
++		uci_parse_error(ctx, "config without name");
+ 
+ 	ofs_type = next_arg(ctx, true, false, false);
+ 	type = pctx_str(pctx, ofs_type);
+ 	if (!uci_validate_type(type))
+ 		uci_parse_error(ctx, "invalid character in type field");
+ 
+ 	ofs_name = next_arg(ctx, false, true, false);
++	assert_eol(ctx);
+ 	type = pctx_str(pctx, ofs_type);
+ 	name = pctx_str(pctx, ofs_name);
+-	assert_eol(ctx);
+ 
+ 	if (!name || !name[0]) {
+ 		ctx->internal = !pctx->merge;
+@@ -467,13 +479,14 @@ static void uci_parse_option(struct uci_context *ctx, bool list)
+ 		uci_parse_error(ctx, "option/list command found before the first section");
+ 
+ 	/* command string null-terminated by strtok */
+-	pctx->pos += strlen(pctx_cur_str(pctx)) + 1;
++	if (uci_increase_pos(pctx, strlen(pctx_cur_str(pctx)) + 1))
++		uci_parse_error(ctx, "option without name");
+ 
+ 	ofs_name = next_arg(ctx, true, true, false);
+ 	ofs_value = next_arg(ctx, false, false, false);
++	assert_eol(ctx);
+ 	name = pctx_str(pctx, ofs_name);
+ 	value = pctx_str(pctx, ofs_value);
+-	assert_eol(ctx);
+ 
+ 	uci_fill_ptr(ctx, &ptr, &pctx->section->e);
+ 	e = uci_lookup_list(&pctx->section->options, name);
+--- a/libuci.c
++++ b/libuci.c
+@@ -161,7 +161,7 @@ uci_get_errorstr(struct uci_context *ctx, char **dest, const char *prefix)
+ 	switch (err) {
+ 	case UCI_ERR_PARSE:
+ 		if (ctx->pctx) {
+-			snprintf(error_info, sizeof(error_info) - 1, " (%s) at line %d, byte %d", (ctx->pctx->reason ? ctx->pctx->reason : "unknown"), ctx->pctx->line, ctx->pctx->byte);
++			snprintf(error_info, sizeof(error_info) - 1, " (%s) at line %d, byte %zu", (ctx->pctx->reason ? ctx->pctx->reason : "unknown"), ctx->pctx->line, ctx->pctx->byte);
+ 			break;
+ 		}
+ 		break;
+--- a/uci.h
++++ b/uci.h
+@@ -34,6 +34,7 @@ extern "C" {
+ #include <setjmp.h>
+ #include <stdio.h>
+ #include <stdint.h>
++#include <stddef.h>
+ 
+ #define UCI_CONFDIR "/etc/config"
+ #define UCI_SAVEDIR "/tmp/.uci"
+@@ -509,11 +510,6 @@ struct uci_parse_option {
+ };
+ 
+ 
+-/* linked list handling */
+-#ifndef offsetof
+-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+-#endif
+-
+ /**
+  * container_of - cast a member of a structure out to the containing structure
+  * @ptr:    the pointer to the member.
+--- a/uci_internal.h
++++ b/uci_internal.h
+@@ -23,17 +23,18 @@ struct uci_parse_context
+ 	/* error context */
+ 	const char *reason;
+ 	int line;
+-	int byte;
++	size_t byte;
+ 
+ 	/* private: */
+ 	struct uci_package *package;
+ 	struct uci_section *section;
+ 	bool merge;
+ 	FILE *file;
+ 	const char *name;
+ 	char *buf;
+-	int bufsz;
+-	int pos;
++	size_t bufsz;
++	size_t buf_filled;
++	size_t pos;
+ };
+ #define pctx_pos(pctx)		((pctx)->pos)
+ #define pctx_str(pctx, i)	(&(pctx)->buf[(i)])
+@@ -54,7 +55,7 @@ __private struct uci_package *uci_alloc_package(struct uci_context *ctx, const c
+ 
+ __private FILE *uci_open_stream(struct uci_context *ctx, const char *filename, const char *origfilename, int pos, bool write, bool create);
+ __private void uci_close_stream(FILE *stream);
+-__private void uci_getln(struct uci_context *ctx, int offset);
++__private void uci_getln(struct uci_context *ctx, size_t offset);
+ 
+ __private void uci_parse_error(struct uci_context *ctx, char *reason);
+ __private void uci_alloc_parse_context(struct uci_context *ctx);
+--- a/util.c
++++ b/util.c
+@@ -221,17 +221,21 @@ __private FILE *uci_open_stream(struct uci_context *ctx, const char *filename, c
+ 
+ 	ret = flock(fd, (write ? LOCK_EX : LOCK_SH));
+ 	if ((ret < 0) && (errno != ENOSYS))
+-		goto error;
++		goto error_close;
+ 
+ 	ret = lseek(fd, 0, pos);
+ 
+ 	if (ret < 0)
+-		goto error;
++		goto error_unlock;
+ 
+ 	file = fdopen(fd, (write ? "w+" : "r"));
+ 	if (file)
+ 		goto done;
+ 
++error_unlock:
++	flock(fd, LOCK_UN);
++error_close:
++	close(fd);
+ error:
+ 	UCI_THROW(ctx, UCI_ERR_IO);
+ done:

@@ -1,0 +1,882 @@
+#!/bin/sh
+
+# Local replacement for the OpenSync/OVSDB thermal manager.  The thresholds,
+# hysteresis and QCA radio chain masks remain sourced from the stock QSDK
+# table. The balanced profile adds an earlier fan floor using the factory
+# actuator's calibrated 1500 RPM point (12000 / 40000 PWM duty).
+
+umask 077
+
+state_dir=${SBE_THERMAL_STATE_DIR:-/var/run/sbe-hardware}
+state_file=$state_dir/thermal.state
+lock_dir=$state_dir/thermal.lock
+timeout_bin=${SBE_TIMEOUT_BIN:-/usr/bin/timeout}
+pwm_script=${SBE_PWM_SCRIPT:-/usr/sbin/askey_pwm.script}
+led_manager=${SBE_LED_MANAGER:-/usr/sbin/sbe-led}
+fan_rpm_file=${SBE_FAN_RPM_FILE:-/tmp/pwm/fan_rpm}
+iot_temperature_file=${SBE_IOT_TEMPERATURE_FILE:-/tmp/iot_temperature}
+pwm_duty_file=${SBE_PWM_DUTY_FILE:-/sys/class/pwm/pwmchip0/pwm3/duty_cycle}
+cfg80211tool_bin=${SBE_CFG80211TOOL:-/usr/sbin/cfg80211tool}
+net_class_dir=${SBE_NET_CLASS_DIR:-/sys/class/net}
+shell_bin=${SBE_SHELL_BIN:-/bin/sh}
+reboot_bin=${SBE_REBOOT_BIN:-/sbin/reboot}
+stat_bin=${SBE_STAT_BIN:-/bin/stat}
+date_bin=${SBE_DATE_BIN:-/bin/date}
+uptime_file=${SBE_UPTIME_FILE:-/proc/uptime}
+state=0
+last_rpm=-1
+last_masks=
+last_monitor_target=-1
+last_led_alert=-1
+fan_fault=0
+fan_bad_count=0
+fan_good_count=0
+fan_actual_rpm=unknown
+fan_rpm_age_seconds=unknown
+fan_rpm_stale=1
+fan_threshold_rpm=0
+fan_maximum_rpm=0
+fan_fault_reason=none
+mask_fault=0
+config_fault=0
+config_fault_reason=none
+last_config_fault=-1
+runtime_state_fault=0
+sample_slot=0
+critical_count=0
+critical_action_attempted=0
+early_fan_active=0
+cooling_profile=balanced
+early_start_c=75
+early_release_c=70
+early_fan_rpm=1500
+# Bounded chart history belongs to this daemon, never persistent storage.
+# Each row is uptime,cpu,wifi0,wifi1,wifi2,iot,actual_rpm,target_rpm.
+history_samples=
+hist_wifi0_0=0; hist_wifi0_1=0; hist_wifi0_2=0; hist_wifi0_3=0
+hist_wifi1_0=0; hist_wifi1_1=0; hist_wifi1_2=0; hist_wifi1_3=0
+hist_wifi2_0=0; hist_wifi2_1=0; hist_wifi2_2=0; hist_wifi2_3=0
+hist_cpu_0=0; hist_cpu_1=0; hist_cpu_2=0; hist_cpu_3=0
+hist_iot_0=0; hist_iot_1=0; hist_iot_2=0; hist_iot_3=0
+case "${1:-}" in
+	'') once=0 ;;
+	--once) once=1 ;;
+	*)
+		echo 'usage: sbe-thermal-policy [--once]' >&2
+		exit 2
+		;;
+esac
+lock_held=0
+
+is_integer() {
+	case "$1" in
+		0) return 0 ;;
+		''|*[!0-9]*|0*) return 1 ;;
+		*) return 0 ;;
+	esac
+}
+
+safe_runtime_file() {
+	local path="$1" maximum_size="$2" size mode
+	[ -f "$path" ] && [ ! -L "$path" ] && [ -O "$path" ] && [ -r "$path" ] || return 1
+	size=$("$stat_bin" -c %s "$path" 2>/dev/null) || return 1
+	is_integer "$size" && [ "${#size}" -le 6 ] && [ "$size" -le "$maximum_size" ] || return 1
+	mode=$("$stat_bin" -c %a "$path" 2>/dev/null) || return 1
+	# Reject group/other write bits (octal digits 2/3/6/7).  The producer may
+	# legitimately expose a read-only sample, so do not require one exact mode.
+	case "$mode" in
+		[0-7][2367][0-7]|[0-7][0-7][2367]) return 1 ;;
+		[0-7][0-7][0-7]) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+prepare_state_dir() {
+	[ ! -L "$state_dir" ] || return 1
+	mkdir -p "$state_dir" 2>/dev/null || return 1
+	[ -d "$state_dir" ] && [ ! -L "$state_dir" ] && [ -O "$state_dir" ] || return 1
+	chmod 700 "$state_dir" 2>/dev/null || return 1
+}
+
+acquire_lock() {
+	local owner
+	if ! mkdir "$lock_dir" 2>/dev/null; then
+		[ -d "$lock_dir" ] && [ ! -L "$lock_dir" ] && [ -O "$lock_dir" ] || return 1
+		owner=$(cat "$lock_dir/pid" 2>/dev/null || true)
+		case "$owner" in
+			''|*[!0-9]*) return 1 ;;
+		esac
+		if kill -0 "$owner" 2>/dev/null; then
+			logger -t sbe-thermal-policy "policy already running as pid $owner"
+			return 1
+		fi
+		# Only reclaim the exact, root-owned lock shape created by this daemon.
+		rm -f "$lock_dir/pid" 2>/dev/null || return 1
+		rmdir "$lock_dir" 2>/dev/null || return 1
+		mkdir "$lock_dir" 2>/dev/null || return 1
+	fi
+	chmod 700 "$lock_dir" 2>/dev/null || return 1
+	printf '%s\n' "$$" > "$lock_dir/pid" || return 1
+	chmod 600 "$lock_dir/pid" 2>/dev/null || return 1
+	lock_held=1
+}
+
+release_lock() {
+	[ "$lock_held" = 1 ] || return 0
+	if [ "$(cat "$lock_dir/pid" 2>/dev/null || true)" = "$$" ]; then
+		rm -f "$lock_dir/pid" 2>/dev/null || true
+		rmdir "$lock_dir" 2>/dev/null || true
+	fi
+	lock_held=0
+}
+
+csv_field() {
+	printf '%s\n' "$1" | cut -d, -f"$2"
+}
+
+capped_masks() {
+	local requested="$1" cap="$2" index requested_value cap_value selected result=
+	for index in 1 2 3 4 5; do
+		requested_value=$(csv_field "$requested" "$index")
+		cap_value=$(csv_field "$cap" "$index")
+		is_integer "$requested_value" && is_integer "$cap_value" || return 1
+		if [ "$requested_value" -le "$cap_value" ]; then
+			selected=$requested_value
+		else
+			selected=$cap_value
+		fi
+		result="${result}${result:+,}$selected"
+	done
+	printf '%s\n' "$result"
+}
+
+read_temperature() {
+	local source="$1"
+	local raw value
+	case "$source" in
+		wifi0|wifi1|wifi2|cpu)
+			raw=$("$timeout_bin" 3 "$pwm_script" "temperature_$source" 2>/dev/null) || return 1
+			value=$(printf '%s\n' "$raw" | tail -n 1)
+		;;
+		iot)
+			safe_runtime_file "$iot_temperature_file" 64 || return 1
+			value=$(cat "$iot_temperature_file" 2>/dev/null)
+		;;
+		*) return 1 ;;
+	esac
+	is_integer "$value" || return 1
+	# A numeric over-range sensor value is thermally unsafe, not merely absent.
+	# Clamp it to the factory table's maximum input so it reaches state 10 and
+	# the controlled-reboot path.  Malformed/negative values remain faults.
+	if [ "${#value}" -gt 3 ] || [ "$value" -gt 150 ]; then
+		value=150
+	fi
+	echo "$value"
+}
+
+read_fan_rpm() {
+	local value
+	safe_runtime_file "$fan_rpm_file" 4096 || return 1
+	value=$(tr -d '\000' < "$fan_rpm_file" 2>/dev/null) || return 1
+	is_integer "$value" || return 1
+	[ "${#value}" -le 5 ] && [ "$value" -le 20000 ] || return 1
+	printf '%s\n' "$value"
+}
+
+file_age_seconds() {
+	local path="$1" modified now age
+	modified=$("$stat_bin" -c %Y "$path" 2>/dev/null) || return 1
+	now=$("$date_bin" +%s 2>/dev/null) || return 1
+	is_integer "$modified" && is_integer "$now" && [ "$now" -ge "$modified" ] || return 1
+	age=$((now - modified))
+	printf '%s\n' "$age"
+}
+
+average_temperature() {
+	local source="$1" value="$2" index sample sum=0 count=0 average remainder half
+	case "$source" in
+		wifi0|wifi1|wifi2|cpu|iot) ;;
+		*) return 1 ;;
+	esac
+	is_integer "$value" || return 1
+	case "$sample_slot" in 0|1|2|3) ;; *) return 1 ;; esac
+	eval "hist_${source}_${sample_slot}=\$value"
+	for index in 0 1 2 3; do
+		eval "sample=\${hist_${source}_${index}:-0}"
+		is_integer "$sample" || return 1
+		[ "$sample" -ne 0 ] || continue
+		sum=$((sum + sample))
+		count=$((count + 1))
+	done
+	[ "$count" -gt 0 ] || return 1
+	average=$((sum / count))
+	remainder=$((sum - average * count))
+	half=$((count >> 1))
+	# Match the factory pm callback's integer rounding, including its slight
+	# upward bias for a one-sample window.
+	[ "$remainder" -lt "$half" ] || average=$((average + 1))
+	averaged_temperature=$average
+}
+
+sample_temperature() {
+	local source="$1" current
+	current=$(read_temperature "$source") || return 1
+	last_temperature_sample=$current
+	average_temperature "$source" "$current"
+}
+
+radio_is_disabled() {
+	local radio="$1" disabled
+	disabled=$(uci -q get "wireless.$radio.disabled" 2>/dev/null || true)
+	[ "$disabled" = 1 ]
+}
+
+clear_temperature_history() {
+	local source="$1" index
+	case "$source" in wifi0|wifi1|wifi2) ;; *) return 1 ;; esac
+	for index in 0 1 2 3; do
+		eval "hist_${source}_${index}=0"
+	done
+}
+
+state_option() {
+	uci -q get "pwm.@state_tbl[$1].$2"
+}
+
+valid_five_number_csv() {
+	local value="$1" minimum="$2" maximum="$3" old_ifs field
+	case "$value" in ''|,*|*,|*,,*|*[!0-9,]*) return 1 ;; esac
+	old_ifs=$IFS
+	IFS=,
+	set -- $value
+	IFS=$old_ifs
+	[ "$#" -eq 5 ] || return 1
+	for field in "$@"; do
+		is_integer "$field" && [ "$field" -ge "$minimum" ] && \
+			[ "$field" -le "$maximum" ] || return 1
+	done
+}
+
+valid_radio_masks() {
+	local value="$1" old_ifs first second third fourth fifth
+	case "$value" in ''|,*|*,|*,,*|*[!0-9,]*) return 1 ;; esac
+	old_ifs=$IFS
+	IFS=,
+	set -- $value
+	IFS=$old_ifs
+	[ "$#" -eq 5 ] || return 1
+	first=$1; second=$2; third=$3; fourth=$4; fifth=$5
+	for value in "$first" "$second" "$third"; do
+		case "$value" in 1|3|7|15) ;; *) return 1 ;; esac
+	done
+	[ "$fourth" = 0 ] && [ "$fifth" = 0 ]
+}
+
+validate_pwm_table() {
+	local index id thresholds clearances rpm masks extra record expected
+	config_fault_reason=none
+	for index in 0 1 2 3 4 5 6 7 8 9 10; do
+		id=$(state_option "$index" id) || {
+			config_fault_reason="state-${index}-missing"
+			return 1
+		}
+		[ "$id" = "$index" ] || {
+			config_fault_reason="state-${index}-id"
+			return 1
+		}
+		thresholds=$(state_option "$index" thrld) || {
+			config_fault_reason="state-${index}-threshold-missing"
+			return 1
+		}
+		clearances=$(state_option "$index" thrld_clr) || {
+			config_fault_reason="state-${index}-clearance-missing"
+			return 1
+		}
+		rpm=$(state_option "$index" fan_rpm) || {
+			config_fault_reason="state-${index}-rpm-missing"
+			return 1
+		}
+		masks=$(state_option "$index" radio_txchainmask) || {
+			config_fault_reason="state-${index}-masks-missing"
+			return 1
+		}
+		valid_five_number_csv "$thresholds" 0 150 || {
+			config_fault_reason="state-${index}-threshold"
+			return 1
+		}
+		valid_five_number_csv "$clearances" 0 150 || {
+			config_fault_reason="state-${index}-clearance"
+			return 1
+		}
+		is_integer "$rpm" || {
+			config_fault_reason="state-${index}-rpm"
+			return 1
+		}
+		if [ "$index" = 0 ]; then
+			[ "$rpm" = 0 ] && [ "$thresholds" = 0,0,0,0,0 ] && \
+				[ "$clearances" = 0,0,0,0,0 ] || {
+				config_fault_reason=state-0-policy
+				return 1
+			}
+		else
+			[ "$rpm" -ge 1500 ] && [ "$rpm" -le 4700 ] || {
+				config_fault_reason="state-${index}-rpm-range"
+				return 1
+			}
+		fi
+		valid_radio_masks "$masks" || {
+			config_fault_reason="state-${index}-masks"
+			return 1
+		}
+		record="$thresholds;$clearances;$rpm;$masks"
+		case "$index" in
+			0) expected='0,0,0,0,0;0,0,0,0,0;0;15,15,15,0,0' ;;
+			1) expected='91,91,91,95,95;62,62,62,75,75;2550;15,15,15,0,0' ;;
+			2) expected='93,93,93,92,92;89,89,89,77,77;2900;15,15,15,0,0' ;;
+			3) expected='94,94,94,89,89;90,90,90,78,78;3150;15,15,15,0,0' ;;
+			4) expected='97,97,97,97,97;93,93,93,93,93;3500;15,15,15,0,0' ;;
+			5) expected='99,99,99,99,99;95,95,95,95,95;3850;15,15,15,0,0' ;;
+			6) expected='108,108,108,108,108;104,104,104,104,104;4700;15,15,15,0,0' ;;
+			7) expected='113,113,113,113,113;109,109,109,109,109;4700;7,7,7,0,0' ;;
+			8) expected='116,116,116,116,116;112,112,112,112,112;4700;3,3,3,0,0' ;;
+			9) expected='119,119,119,119,119;115,115,115,115,115;4700;1,1,1,0,0' ;;
+			10) expected='120,120,120,120,120;116,116,116,116,116;4700;1,1,1,0,0' ;;
+		esac
+		[ "$record" = "$expected" ] || {
+			config_fault_reason="state-${index}-factory-mismatch"
+			return 1
+		}
+	done
+	extra=$(state_option 11 id 2>/dev/null || true)
+	[ -z "$extra" ] || {
+		config_fault_reason=extra-state
+		return 1
+	}
+}
+
+require_policy_option() {
+	local option="$1" expected="$2" actual
+	actual=$(uci -q get "sbe-hardware.policy.$option") || {
+		config_fault_reason="local-${option}-missing"
+		return 1
+	}
+	[ "$actual" = "$expected" ] || {
+		config_fault_reason="local-${option}-mismatch"
+		return 1
+	}
+}
+
+validate_local_policy() {
+	local minimum_rpm first_rpm start release rpm
+	require_policy_option interval 10 &&
+		require_policy_option failsafe_rpm 4700 &&
+		require_policy_option fan_tolerance_rpm 500 &&
+		require_policy_option fan_rpm_max_age_seconds 12 &&
+		require_policy_option fan_fault_samples 11 &&
+		require_policy_option fan_hard_fault_samples 3 &&
+		require_policy_option fan_recovery_samples 1 &&
+		require_policy_option critical_state_samples 3 || return 1
+	# Configurations saved by older firmware have no profile option.
+	cooling_profile=$(uci -q get sbe-hardware.policy.cooling_profile 2>/dev/null || echo balanced)
+	case "$cooling_profile" in
+		balanced)
+			start=$(uci -q get sbe-hardware.policy.early_start_c 2>/dev/null || echo 75)
+			release=$(uci -q get sbe-hardware.policy.early_release_c 2>/dev/null || echo 70)
+			rpm=$(uci -q get sbe-hardware.policy.early_fan_rpm 2>/dev/null || echo 1500)
+			minimum_rpm=$(uci -q get pwm.config.fan_ctl_min_rpm)
+			first_rpm=$(state_option 1 fan_rpm)
+			# Early cooling is an additive floor, within the factory actuator's
+			# calibrated range. Reject invalid settings instead of silently
+			# publishing thresholds different from those actually in effect.
+			if ! is_integer "$start" || ! is_integer "$release" ||
+			   ! is_integer "$rpm" || [ "$minimum_rpm" != 1500 ] ||
+			   [ "$first_rpm" != 2550 ] || [ "${#start}" -gt 2 ] ||
+			   [ "${#release}" -gt 2 ] || [ "${#rpm}" -gt 4 ] ||
+			   [ "$start" -lt 50 ] || [ "$start" -gt 85 ] ||
+			   [ "$release" -lt 40 ] || [ "$release" -gt $((start - 5)) ] ||
+			   [ "$rpm" -lt "$minimum_rpm" ] || [ "$rpm" -gt "$first_rpm" ]; then
+				config_fault_reason=local-early-cooling-invalid
+				return 1
+			fi
+			early_start_c=$start
+			early_release_c=$release
+			early_fan_rpm=$rpm
+			return 0 ;;
+		factory) return 0 ;;
+		*) config_fault_reason=local-cooling_profile-invalid; return 1 ;;
+	esac
+}
+
+apply_early_cooling() {
+	local temperature warm=0 start=0
+	if [ "$cooling_profile" != balanced ]; then
+		early_fan_active=0
+		return 0
+	fi
+	for temperature in $temperatures; do
+		[ "$temperature" != x ] || continue
+		[ "$temperature" -lt "$early_start_c" ] || start=1
+		[ "$temperature" -le "$early_release_c" ] || warm=1
+	done
+	if [ "$start" = 1 ]; then early_fan_active=1
+	elif [ "$warm" = 0 ]; then early_fan_active=0
+	fi
+	# This floor can only increase cooling. Factory derating and all fault
+	# overrides still run independently, including after fan-fault recovery.
+	if [ "$early_fan_active" = 1 ]; then
+		[ "$policy_rpm" -ge "$early_fan_rpm" ] || policy_rpm=$early_fan_rpm
+	fi
+}
+
+candidate_is_active() {
+	local candidate="$1"
+	local thresholds index temperature threshold
+	if [ "$candidate" -le "$state" ]; then
+		thresholds=$(state_option "$candidate" thrld_clr) || return 1
+	else
+		thresholds=$(state_option "$candidate" thrld) || return 1
+	fi
+	index=1
+	for temperature in $temperatures; do
+		threshold=$(csv_field "$thresholds" "$index")
+		if [ "$temperature" != x ] && is_integer "$threshold" && \
+				[ "$temperature" -ge "$threshold" ]; then
+			return 0
+		fi
+		index=$((index + 1))
+	done
+	return 1
+}
+
+set_radio_masks() {
+	local masks="$1"
+	local index=1 radio ap desired raw current disabled carrier flags failed=0
+	for radio in wifi0 wifi1 wifi2; do
+		case "$radio" in
+			wifi0) ap=ath0 ;;
+			wifi1) ap=ath1 ;;
+			wifi2) ap=ath2 ;;
+		esac
+		desired=$(csv_field "$masks" "$index")
+		index=$((index + 1))
+		is_integer "$desired" || {
+			failed=1
+			continue
+		}
+		disabled=$(uci -q get "wireless.$radio.disabled" 2>/dev/null || true)
+		[ "$disabled" = 1 ] && continue
+		# A radio reload tears down athX before rebuilding the QCA control
+		# object. There is no RF transmission to limit during that window, so
+		# defer until the AP is RUNNING instead of publishing a false persistent
+		# fault from cfg80211tool's transient ENODEV response.
+		[ -d "$net_class_dir/$ap" ] || continue
+		carrier=$(cat "$net_class_dir/$ap/carrier" 2>/dev/null || echo 0)
+		flags=$(cat "$net_class_dir/$ap/flags" 2>/dev/null || echo 0)
+		case "$flags" in ''|*[!0-9a-fA-FxX]*) flags=0 ;; esac
+		[ "$carrier" = 1 ] && [ $((flags & 0x40)) -ne 0 ] || continue
+		# QSDK radio control objects (wifi0..wifi2) are not guaranteed to
+		# appear as same-named Linux netdevs.  cfg80211tool's bounded read is
+		# the authoritative existence and health probe for an enabled radio.
+		# The stock QSDK cfg80211tool is a shell program without a shebang.
+		# An interactive ash retries it as a script after ENOEXEC, while BusyBox
+		# timeout does not.  Invoke it through the fixed shell explicitly so the
+		# bounded command behaves the same way as a direct factory invocation.
+		raw=$("$timeout_bin" 3 "$shell_bin" "$cfg80211tool_bin" "$radio" get_txchainmask 2>/dev/null) || {
+			failed=1
+			continue
+		}
+		current=$(printf '%s\n' "$raw" | sed -n 's/.*://p' | tail -n 1)
+		[ "$current" = "$desired" ] && continue
+		"$timeout_bin" 3 "$shell_bin" "$cfg80211tool_bin" "$radio" txchainmask "$desired" >/dev/null 2>&1 || {
+			logger -t sbe-thermal-policy "failed to set $radio txchainmask=$desired"
+			failed=1
+			continue
+		}
+		raw=$("$timeout_bin" 3 "$shell_bin" "$cfg80211tool_bin" "$radio" get_txchainmask 2>/dev/null) || {
+			failed=1
+			continue
+		}
+		current=$(printf '%s\n' "$raw" | sed -n 's/.*://p' | tail -n 1)
+		[ "$current" = "$desired" ] || {
+			logger -t sbe-thermal-policy "readback mismatch for $radio txchainmask=$desired actual=${current:-unknown}"
+			failed=1
+		}
+	done
+	return "$failed"
+}
+
+set_monitor_target() {
+	local monitored="$1"
+	[ "$monitored" = "$last_monitor_target" ] && return 0
+	last_monitor_target=$monitored
+	fan_threshold_rpm=$((monitored - fan_tolerance_rpm))
+	[ "$fan_threshold_rpm" -ge 0 ] || fan_threshold_rpm=0
+	fan_maximum_rpm=$((monitored + fan_tolerance_rpm))
+}
+
+set_fan_target() {
+	local requested="$1" force="${2:-0}"
+	[ "$force" = 1 ] || [ "$requested" != "$last_rpm" ] || return 0
+	if "$timeout_bin" 3 "$pwm_script" fan_ctl "$requested" >/dev/null 2>&1; then
+		[ "$force" = 1 ] || logger -t sbe-thermal-policy \
+			"state=$state target_rpm=$requested temps=$temperatures sensor_fault=$sensor_fault fan_fault=$fan_fault"
+		last_rpm=$requested
+		return 0
+	fi
+	logger -t sbe-thermal-policy "fan control command failed for target_rpm=$requested"
+	last_rpm=-1
+	return 1
+}
+
+activate_fan_fault() {
+	local reason="$1"
+	if [ "$fan_fault" = 0 ]; then
+		logger -t sbe-thermal-policy \
+			"fan fault: reason=$reason actual_rpm=$fan_actual_rpm target_rpm=$last_monitor_target acceptable_rpm=$fan_threshold_rpm-$fan_maximum_rpm"
+	fi
+	fan_fault=1
+	fan_fault_reason=$reason
+	target_rpm=$failsafe_rpm
+	target_masks=$fan_fault_masks
+	set_monitor_target "$target_rpm"
+	set_fan_target "$target_rpm" || true
+}
+
+update_thermal_led() {
+	local alert=0
+	if [ "$sensor_fault" = 1 ] || [ "$fan_fault" = 1 ] || \
+			[ "$config_fault" = 1 ] || [ "$runtime_state_fault" = 1 ] || \
+			[ "$state" -ge 7 ]; then
+		alert=1
+	fi
+	# Reconcile the claim on every cycle.  sbe-led is idempotent, and an
+	# external reset or service restart must not leave a stale cached state.
+	if [ "$alert" = 1 ]; then
+		"$timeout_bin" 8 "$led_manager" claim thermal error >/dev/null 2>&1 || return 1
+	else
+		"$timeout_bin" 8 "$led_manager" release thermal >/dev/null 2>&1 || return 1
+	fi
+	last_led_alert=$alert
+}
+
+record_history() {
+	local now=$1 remaining=$history_samples row time kept= count=0 actual=$fan_actual_rpm
+	while [ -n "$remaining" ]; do
+		row=${remaining%%;*}
+		case "$remaining" in *';'*) remaining=${remaining#*;} ;; *) remaining= ;; esac
+		time=${row%%,*}
+		if [ "$time" -ge "$((now - 900))" ] && [ "$time" -lt "$now" ]; then
+			kept=${kept:+$kept;}$row
+			count=$((count + 1))
+		fi
+	done
+	# At the fixed 10-second policy interval, 91 points cover 15 minutes.
+	while [ "$count" -gt 90 ]; do
+		kept=${kept#*;}
+		count=$((count - 1))
+	done
+	[ "$fan_rpm_stale" = 0 ] || actual=unknown
+	history_samples="${kept:+$kept;}$now,$temp_cpu,$temp_wifi0,$temp_wifi1,$temp_wifi2,$temp_iot,$actual,$target_rpm"
+}
+
+write_state() {
+	local pwm_duty state_tmp sample_uptime remainder
+	[ -n "$state_file" ] || return 0
+	pwm_duty=$("$timeout_bin" 1 cat "$pwm_duty_file" 2>/dev/null || true)
+	is_integer "$pwm_duty" && [ "$pwm_duty" -le 40000 ] || pwm_duty=unknown
+	state_tmp="$state_file.$$"
+	[ ! -e "$state_tmp" ] && [ ! -L "$state_tmp" ] || return 1
+	read -r sample_uptime remainder < "$uptime_file" || return 1
+	sample_uptime=${sample_uptime%%.*}
+	is_integer "$sample_uptime" || return 1
+	record_history "$sample_uptime"
+	{
+		printf 'sample_uptime_seconds=%s\n' "$sample_uptime"
+		printf 'history_samples=%s\n' "$history_samples"
+		printf 'cooling_profile=%s\n' "$cooling_profile"
+		printf 'early_fan_active=%s\n' "$early_fan_active"
+		printf 'early_start_c=%s\n' "$early_start_c"
+		printf 'early_release_c=%s\n' "$early_release_c"
+		printf 'early_fan_rpm=%s\n' "$early_fan_rpm"
+		printf 'state=%s\n' "$state"
+		printf 'policy_interval=%s\n' "$interval"
+		printf 'fan_policy_rpm=%s\n' "$policy_rpm"
+		printf 'fan_target_rpm=%s\n' "$target_rpm"
+		printf 'fan_actual_rpm=%s\n' "$fan_actual_rpm"
+		printf 'fan_rpm_age_seconds=%s\n' "$fan_rpm_age_seconds"
+		printf 'fan_rpm_stale=%s\n' "$fan_rpm_stale"
+		printf 'fan_rpm_max_age_seconds=%s\n' "$fan_rpm_max_age_seconds"
+		printf 'fan_minimum_rpm=%s\n' "$fan_threshold_rpm"
+		printf 'fan_maximum_rpm=%s\n' "$fan_maximum_rpm"
+		printf 'fan_pwm_duty=%s\n' "${pwm_duty:-unknown}"
+		printf 'fan_fault=%s\n' "$fan_fault"
+		printf 'fan_fault_reason=%s\n' "$fan_fault_reason"
+		printf 'fan_bad_samples=%s\n' "$fan_bad_count"
+		printf 'fan_good_samples=%s\n' "$fan_good_count"
+		printf 'wifi0_temp=%s\n' "$temp_wifi0"
+		printf 'wifi1_temp=%s\n' "$temp_wifi1"
+		printf 'wifi2_temp=%s\n' "$temp_wifi2"
+		printf 'cpu_temp=%s\n' "$temp_cpu"
+		printf 'iot_temp=%s\n' "$temp_iot"
+		printf 'sensor_fault=%s\n' "$sensor_fault"
+		printf 'config_fault=%s\n' "$config_fault"
+		printf 'config_fault_reason=%s\n' "$config_fault_reason"
+		printf 'radio_txchainmask=%s\n' "$target_masks"
+		printf 'radio_mask_fault=%s\n' "$mask_fault"
+		printf 'temperature_sample_slot=%s\n' "$sample_slot"
+		printf 'critical_state_samples=%s\n' "$critical_count"
+		printf 'critical_action_attempted=%s\n' "$critical_action_attempted"
+	} > "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	chmod 600 "$state_tmp" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+	mv -f "$state_tmp" "$state_file" || {
+		rm -f "$state_tmp"
+		return 1
+	}
+}
+
+fail_cool_on_exit() {
+	"$timeout_bin" 3 "$pwm_script" fan_ctl 4700 >/dev/null 2>&1 || true
+	"$timeout_bin" 8 "$led_manager" claim thermal error >/dev/null 2>&1 || true
+}
+
+cleanup_policy() {
+	[ "$once" = 1 ] || fail_cool_on_exit
+	release_lock
+}
+
+if ! prepare_state_dir; then
+	logger -t sbe-thermal-policy 'unsafe runtime state directory; refusing to run'
+	runtime_state_fault=1
+	state_file=
+	fail_cool_on_exit
+	exit 1
+fi
+if ! acquire_lock; then
+	logger -t sbe-thermal-policy 'cannot acquire singleton policy lock; refusing to run'
+	fail_cool_on_exit
+	exit 1
+fi
+"$timeout_bin" 3 "$pwm_script" fan_rpm_thread enable >/dev/null 2>&1 || true
+trap 'cleanup_policy' EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+while :; do
+	interval=10
+	failsafe_rpm=4700
+	missing_iot_ok=$(uci -q get sbe-hardware.policy.missing_iot_ok)
+	[ "$missing_iot_ok" = 0 ] || missing_iot_ok=1
+	fan_tolerance_rpm=500
+	# askey_pwm normally refreshes in about 1.6 s but can skip three transition
+	# cycles (about 6.4 s).  Twelve seconds avoids a false hard fault while a
+	# RAM-only hardware gate will measure the real worst-case interval.
+	QSDK_FAN_RPM_MAX_AGE_SECONDS=12
+	fan_rpm_max_age_seconds=$QSDK_FAN_RPM_MAX_AGE_SECONDS
+	fan_fault_samples=11
+	fan_hard_fault_samples=3
+	fan_recovery_samples=1
+	critical_state_samples=3
+	if validate_pwm_table && validate_local_policy; then
+		config_fault=0
+		fan_failsafe_masks=$(state_option 7 radio_txchainmask)
+	else
+		config_fault=1
+		# With an untrusted table there is no safe last-known threshold context.
+		# Never relax a possibly critical 1-chain state back to 7 chains.
+		fan_failsafe_masks=1,1,1,0,0
+	fi
+	if [ "$config_fault" != "$last_config_fault" ]; then
+		if [ "$config_fault" = 1 ]; then
+			logger -t sbe-thermal-policy "invalid PWM policy table: $config_fault_reason"
+		else
+			logger -t sbe-thermal-policy 'PWM policy table validation passed'
+		fi
+		last_config_fault=$config_fault
+	fi
+
+	sensor_fault=0
+	if sample_temperature wifi0; then
+		if [ "$last_temperature_sample" = 0 ] && radio_is_disabled wifi0; then
+			clear_temperature_history wifi0; temp_wifi0=x
+		else temp_wifi0=$averaged_temperature; fi
+	elif radio_is_disabled wifi0; then
+		clear_temperature_history wifi0
+		temp_wifi0=x
+	else temp_wifi0=x; sensor_fault=1; fi
+	if sample_temperature wifi1; then
+		if [ "$last_temperature_sample" = 0 ] && radio_is_disabled wifi1; then
+			clear_temperature_history wifi1; temp_wifi1=x
+		else temp_wifi1=$averaged_temperature; fi
+	elif radio_is_disabled wifi1; then
+		clear_temperature_history wifi1
+		temp_wifi1=x
+	else temp_wifi1=x; sensor_fault=1; fi
+	if sample_temperature wifi2; then
+		if [ "$last_temperature_sample" = 0 ] && radio_is_disabled wifi2; then
+			clear_temperature_history wifi2; temp_wifi2=x
+		else temp_wifi2=$averaged_temperature; fi
+	elif radio_is_disabled wifi2; then
+		clear_temperature_history wifi2
+		temp_wifi2=x
+	else temp_wifi2=x; sensor_fault=1; fi
+	if sample_temperature cpu; then temp_cpu=$averaged_temperature; else temp_cpu=x; sensor_fault=1; fi
+	if sample_temperature iot; then temp_iot=$averaged_temperature; else temp_iot=x; fi
+	sample_slot=$(((sample_slot + 1) & 3))
+	[ "$missing_iot_ok" = 1 ] || [ "$temp_iot" != x ] || sensor_fault=1
+	temperatures="$temp_wifi0 $temp_wifi1 $temp_wifi2 $temp_cpu $temp_iot"
+
+	desired=0
+	if [ "$config_fault" = 0 ]; then
+		for candidate in 1 2 3 4 5 6 7 8 9 10; do
+			candidate_is_active "$candidate" && desired=$candidate
+		done
+	else
+		desired=6
+	fi
+	if [ "$sensor_fault" = 1 ] && [ "$desired" -lt 6 ]; then
+		desired=6
+	fi
+
+	# Factory pm changes at most one thermal state per 10-second callback.  This
+	# keeps cooling and radio derating in place while a four-sample average cools
+	# down, instead of dropping directly from a protected state to zero.
+	if [ "$desired" -gt "$state" ]; then
+		state=$((state + 1))
+	elif [ "$desired" -lt "$state" ]; then
+		state=$((state - 1))
+	fi
+	critical_reboot_due=0
+	if [ "$state" -ge 10 ]; then
+		if [ "$critical_count" -lt "$critical_state_samples" ]; then
+			critical_count=$((critical_count + 1))
+		fi
+		if [ "$critical_count" -ge "$critical_state_samples" ]; then
+			critical_action_attempted=1
+			critical_reboot_due=1
+		fi
+	else
+		critical_count=0
+		critical_action_attempted=0
+	fi
+
+	if [ "$config_fault" = 0 ]; then
+		policy_rpm=$(state_option "$state" fan_rpm)
+		policy_masks=$(state_option "$state" radio_txchainmask)
+	else
+		policy_rpm=$failsafe_rpm
+		policy_masks=15,15,15,0,0
+	fi
+	if ! is_integer "$policy_rpm" || [ "$policy_rpm" -gt "$failsafe_rpm" ]; then
+		policy_rpm=$failsafe_rpm
+	fi
+	if [ "$config_fault" = 0 ]; then
+		apply_early_cooling || policy_rpm=$failsafe_rpm
+	fi
+	[ "$sensor_fault" = 0 ] || policy_rpm=$failsafe_rpm
+	[ -n "$policy_masks" ] || policy_masks=15,15,15,0,0
+	protection_masks=$(capped_masks "$policy_masks" "$fan_failsafe_masks" 2>/dev/null) || \
+		protection_masks=1,1,1,0,0
+	fan_fault_masks=$protection_masks
+
+	target_rpm=$policy_rpm
+	target_masks=$policy_masks
+	if [ "$sensor_fault" = 1 ] || [ "$fan_fault" = 1 ] || \
+			[ "$config_fault" = 1 ] || [ "$runtime_state_fault" = 1 ]; then
+		target_rpm=$failsafe_rpm
+		target_masks=$protection_masks
+	fi
+
+	# Parse a bounded, root-owned sample first, then obtain its age.  This keeps
+	# an untrusted /tmp path from causing an unbounded read and makes a replaced
+	# or vanished file fail closed as unknown telemetry.
+	fan_actual_rpm=$(read_fan_rpm 2>/dev/null || printf '%s\n' unknown)
+	fan_rpm_age_seconds=$(file_age_seconds "$fan_rpm_file" 2>/dev/null || printf '%s\n' unknown)
+	if [ "$fan_actual_rpm" != unknown ] && is_integer "$fan_rpm_age_seconds" && \
+			[ "$fan_rpm_age_seconds" -le "$fan_rpm_max_age_seconds" ]; then
+		fan_rpm_stale=0
+	else
+		fan_actual_rpm=unknown
+		fan_rpm_stale=1
+	fi
+
+	# PM validates the latest tachometer sample against the target that was in
+	# force at the start of this callback, then applies the newly stepped state.
+	# Comparing immediately against the new target would count normal fan spin-up
+	# as a fault on every state transition.
+	monitor_rpm=$last_monitor_target
+	is_integer "$monitor_rpm" || monitor_rpm=0
+	set_monitor_target "$monitor_rpm"
+	monitor_minimum_rpm=$fan_threshold_rpm
+	monitor_maximum_rpm=$fan_maximum_rpm
+	fan_measured_rpm=$fan_actual_rpm
+	if is_integer "$fan_measured_rpm" && \
+			[ "$fan_measured_rpm" -ge "$monitor_minimum_rpm" ] && \
+			[ "$fan_measured_rpm" -le "$monitor_maximum_rpm" ]; then
+		fan_bad_count=0
+		if [ "$fan_good_count" -lt "$fan_recovery_samples" ]; then
+			fan_good_count=$((fan_good_count + 1))
+		fi
+		if [ "$fan_fault" = 1 ] && [ "$fan_good_count" -ge "$fan_recovery_samples" ]; then
+			logger -t sbe-thermal-policy \
+				"fan recovered: actual_rpm=$fan_actual_rpm acceptable_rpm=$monitor_minimum_rpm-$monitor_maximum_rpm"
+			fan_fault=0
+			fan_fault_reason=none
+			fan_bad_count=0
+			fan_good_count=0
+			target_rpm=$policy_rpm
+			target_masks=$policy_masks
+			if [ "$sensor_fault" = 1 ] || [ "$config_fault" = 1 ] || \
+					[ "$runtime_state_fault" = 1 ]; then
+				target_rpm=$failsafe_rpm
+				target_masks=$protection_masks
+			fi
+		fi
+	else
+		fan_good_count=0
+		fan_error_limit=$fan_fault_samples
+		if [ "$fan_actual_rpm" = unknown ] || \
+				{ [ "$monitor_rpm" -gt 0 ] && [ "$fan_actual_rpm" = 0 ]; }; then
+			fan_error_limit=$fan_hard_fault_samples
+		fi
+		if [ "$fan_bad_count" -lt "$fan_error_limit" ]; then
+			fan_bad_count=$((fan_bad_count + 1))
+		fi
+		if [ "$fan_fault" = 0 ] && [ "$fan_bad_count" -ge "$fan_error_limit" ]; then
+			activate_fan_fault rpm-outside-tolerance
+		fi
+	fi
+	set_monitor_target "$target_rpm"
+	force_fan_target=0
+	if { is_integer "$fan_actual_rpm" && [ "$fan_actual_rpm" -ne "$target_rpm" ]; } || \
+		{ [ "$fan_actual_rpm" = unknown ] && [ "$target_rpm" -gt 0 ]; }; then
+		force_fan_target=1
+	fi
+	set_fan_target "$target_rpm" "$force_fan_target" || activate_fan_fault command-failed
+
+	if set_radio_masks "$target_masks"; then
+		last_masks=$target_masks
+		mask_fault=0
+	else
+		mask_fault=1
+	fi
+
+	update_thermal_led || logger -t sbe-thermal-policy 'failed to reconcile thermal LED claim'
+	write_state || logger -t sbe-thermal-policy 'failed to publish thermal status'
+	if [ "$critical_reboot_due" = 1 ]; then
+		logger -t sbe-thermal-policy \
+			"critical temperature persisted for $critical_count samples; requesting a controlled reboot"
+		"$timeout_bin" 5 sync >/dev/null 2>&1 || true
+		if ! "$timeout_bin" 10 "$reboot_bin" >/dev/null 2>&1; then
+			logger -t sbe-thermal-policy 'controlled critical-temperature reboot request failed'
+		fi
+	fi
+	[ "$once" = 0 ] || exit 0
+	sleep "$interval"
+done

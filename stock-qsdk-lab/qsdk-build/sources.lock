@@ -1,0 +1,82 @@
+# SBE1V1K factory evidence.  These values describe the dumped 1.1.3.1 image;
+# they are not claims about the public CodeLinaro tree below.
+FACTORY_SDK_VERSION=SPF12.2CUS2
+FACTORY_SDK_VERSION_ALTERNATE=SPF12.2CSU2
+FACTORY_OPENWRT_COMMIT=ac77edb2edf0b7770bef36bec016903a7902af72
+FACTORY_KERNEL_RELEASE=5.4.213
+FACTORY_KERNEL_VERMAGIC='5.4.213 SMP preempt mod_unload aarch64'
+FACTORY_KERNEL_CONFIG_SHA256=12c217f2c327d62d55d941b269c8da492c34019de89fdb30c0530af2b7a4743f
+FACTORY_KERNEL_CONFIG_LINES=5661
+FACTORY_ARCH=aarch64
+FACTORY_GCC_VERSION=7.5.0
+FACTORY_MUSL_VERSION=1.1.24
+PASSWALL_UDP_LOOKUP_COMPAT_SHA256=46578c0632d87732c5f68cdda5fb6dbb2edeb9767cb0e1c4147b675a13e8d5dd
+
+# Qualcomm's public QSDK 12.2 release manifest.  This is the closest public
+# baseline found.  The factory commit above is not present in this repository,
+# so public QSDK artifacts remain candidates until the stock-ABI gates pass.
+QSDK_BRANCH=NHSS.QSDK.12.2
+QSDK_MANIFEST_URL=https://git.codelinaro.org/clo/qsdk/releases/manifest/qstak.git
+QSDK_MANIFEST_TAG=AU_LINUX_QSDK_NHSS.QSDK.12.2_TARGET_ALL.12.2.000.2856
+QSDK_MANIFEST_TAG_OBJECT=d8551648724eb69526db9933840698836dc31d6d
+QSDK_MANIFEST_COMMIT=2c5a5400eaa3ddf153a2dda810a6abff8ff50848
+QSDK_MANIFEST_XML=AU_LINUX_QSDK_NHSS.QSDK.12.2_TARGET_ALL.12.2.000.2856.xml
+QSDK_MANIFEST_XML_BLOB=543eda9abc0cafaf1e4b1805e5764b4ba7cea7fa
+QSDK_MANIFEST_XML_SHA256=56199ad2aaddc1214efb1d73804585ab7f4064d6a3af995d031938e7f19c6db9
+
+QSDK_OPENWRT_URL=https://git.codelinaro.org/clo/qsdk/oss/system/openwrt_repo.git
+QSDK_OPENWRT_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_system_openwrt_repo.git
+QSDK_OPENWRT_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_system_openwrt_repo.git
+QSDK_OPENWRT_CN_MIRROR_URL=
+QSDK_OPENWRT_COMMIT=e1bc332529d3e4b0ef27173a8549a87ee7490878
+QSDK_OPENWRT_TREE=20a826eb7bfd2eec6c70a93d94c6fa1a5f282344
+
+QSDK_PATCHES_URL=https://git.codelinaro.org/clo/qsdk/oss/system/openwrt-patches.git
+QSDK_PATCHES_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_system_openwrt-patches.git
+QSDK_PATCHES_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_system_openwrt-patches.git
+QSDK_PATCHES_CN_MIRROR_URL=
+QSDK_PATCHES_COMMIT=32e25b687e3038624b85aeb3416eabe4f8b12129
+QSDK_PATCHES_TREE=1e2325b9839525dfda6e31ac85c7e6fe29dd30f8
+
+QSDK_KERNEL_URL=https://git.codelinaro.org/clo/qsdk/oss/kernel/linux-ipq-5.4.git
+QSDK_KERNEL_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_kernel_linux-ipq-5.4.git
+QSDK_KERNEL_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_kernel_linux-ipq-5.4.git
+QSDK_KERNEL_CN_MIRROR_URL=
+QSDK_KERNEL_COMMIT=d4b74ee3b5f65dcd6f26797eab957846ab03b3ad
+QSDK_KERNEL_TREE=75a6b201325880e6c2662988b9411d72c38bf264
+
+QSDK_PACKAGES_URL=https://git.codelinaro.org/clo/qsdk/oss/system/feeds/packages.git
+QSDK_PACKAGES_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_system_feeds_packages.git
+QSDK_PACKAGES_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_system_feeds_packages.git
+QSDK_PACKAGES_CN_MIRROR_URL=
+QSDK_PACKAGES_COMMIT=fe5947b6e21b083f6858009b8a59c8fd153d896d
+QSDK_PACKAGES_TREE=2e7e449564b7d5d1680d97f78fb0aa31947c5a21
+
+QSDK_LUCI_URL=https://git.codelinaro.org/clo/qsdk/oss/system/feeds/luci.git
+QSDK_LUCI_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_system_feeds_luci.git
+QSDK_LUCI_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_system_feeds_luci.git
+QSDK_LUCI_CN_MIRROR_URL=https://gitee.com/simcom-community/qsdk-luci.git
+QSDK_LUCI_COMMIT=4b50d7975bd312fd0e5b28b95b67fb372cfa9da7
+QSDK_LUCI_TREE=c80f0cc414e227a0c390397161c3c6d2b6dd8eb9
+
+QSDK_CONFIGS_URL=https://git.codelinaro.org/clo/qsdk/oss/releases/configs/qsdk.git
+QSDK_CONFIGS_MIRROR_URL=https://github.com/CodeLinaro-mirror/qsdk_oss_releases_configs_qsdk.git
+QSDK_CONFIGS_PROXY_URL=https://ghproxy.net/https://github.com/CodeLinaro-mirror/qsdk_oss_releases_configs_qsdk.git
+QSDK_CONFIGS_CN_MIRROR_URL=
+QSDK_CONFIGS_COMMIT=25bab0b972296759b78109c7ccd168c47498e87a
+QSDK_CONFIGS_TREE=ae630eb4472a5a339a9b5459c972024a05fb7fc0
+QSDK_SETUP_ENVIRONMENT_SHA256=00ac07ace960809cc627fef51c0919eab8ac083ed6cfd81adec356e64c0f8cc2
+
+# Official Linux extractor pinned to the same public kernel commit.
+EXTRACT_IKCONFIG_URL=https://git.codelinaro.org/clo/qsdk/oss/kernel/linux-ipq-5.4/-/raw/d4b74ee3b5f65dcd6f26797eab957846ab03b3ad/scripts/extract-ikconfig
+EXTRACT_IKCONFIG_SHA256=473ffa2fa199f6d450b19221e816e7ced5aed6b84eb0ab20b96e4ce148c33a1d
+
+# Modern, official userland sources.  These are build candidates, not approved
+# router binaries.  Approval requires target ELF/chroot and RAM-only gates.
+DNSMASQ_VERSION=2.93
+DNSMASQ_URL=https://thekelleys.org.uk/dnsmasq/dnsmasq-2.93.tar.xz
+DNSMASQ_SHA256=0c00d4e5c97c8306e5fb932b348b34269c9c29a0e7df0e8e82958b407092bc19
+
+DROPBEAR_VERSION=2026.94
+DROPBEAR_URL=https://matt.ucc.asn.au/dropbear/releases/dropbear-2026.94.tar.bz2
+DROPBEAR_SHA256=e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1ae81

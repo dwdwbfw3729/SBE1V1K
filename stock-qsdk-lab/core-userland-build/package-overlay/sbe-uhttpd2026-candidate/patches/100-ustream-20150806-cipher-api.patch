@@ -1,0 +1,20 @@
+--- a/tls.c
++++ b/tls.c
+@@ -63,10 +63,17 @@ int uh_tls_init(const char *key, const ch
+ 		return -EINVAL;
+ 	}
+ 
++#ifdef SBE_USTREAM_SSL_ABI_20150806
++	if (ciphers) {
++		fprintf(stderr, "Explicit cipher lists require a newer ustream-ssl ABI\n");
++		return -EOPNOTSUPP;
++	}
++#else
+ 	if (ciphers && ops->context_set_ciphers(ctx, ciphers)) {
+ 		fprintf(stderr, "No recognized ciphers in cipher list\n");
+ 		return -EINVAL;
+ 	}
++#endif
+ 
+ 	return 0;
+ }

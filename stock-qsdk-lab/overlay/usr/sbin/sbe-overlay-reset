@@ -1,0 +1,25 @@
+#!/bin/sh
+# Request a transactional reset of only the replacement OpenWrt upperdir.
+
+set -eu
+
+[ "$(cat /tmp/sbe-overlay-mode 2>/dev/null)" = persistent ] || {
+	echo "Refusing reset: persistent p30 overlay is not active." >&2
+	exit 1
+}
+grep -q '^/dev/mmcblk0p30 /overlay ext4 ' /proc/mounts || {
+	echo "Refusing reset: /overlay is not rootfs_data_1 (p30)." >&2
+	exit 1
+}
+[ -d /overlay/openwrt/upper ] && [ -d /overlay/openwrt/work ] || {
+	echo "Refusing reset: p30 overlay layout is incomplete." >&2
+	exit 1
+}
+[ ! -e /overlay/openwrt/.factory-reset-pending ] || {
+	echo "Refusing reset: a reset transaction is already pending." >&2
+	exit 1
+}
+
+touch /overlay/openwrt/.factory-reset
+sync
+echo "Factory reset requested. Reboot to apply it; one-boot rollback is retained."

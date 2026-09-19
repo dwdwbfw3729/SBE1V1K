@@ -1,0 +1,20 @@
+config system
+	option hostname 'SBE1V1K'
+	option timezone 'CST-8'
+	option zonename 'Asia/Shanghai'
+	option log_size '2048'
+	option cronloglevel '8'
+
+config timeserver 'ntp'
+	option enabled '1'
+	option use_dhcp '1'
+	list server '0.openwrt.pool.ntp.org'
+	list server '1.openwrt.pool.ntp.org'
+	list server '2.openwrt.pool.ntp.org'
+	list server '3.openwrt.pool.ntp.org'
+	option enable_server '0'
+
+config rngd 'rngd'
+	option enabled '1'
+	option device '/dev/hwrng'
+	option fill_watermark '2048'

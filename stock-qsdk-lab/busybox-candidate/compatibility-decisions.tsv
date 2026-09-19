@@ -1,0 +1,13 @@
+# interface<TAB>source<TAB>caller evidence<TAB>decision
+date -k	public OpenWrt 250-date-k-flag patch	stock /etc/init.d/system invokes it	forward-port the isolated local-timezone behavior
+stat -c	upstream BusyBox config	stock/QSDK and replacement overlay use formatted stat	enable FEATURE_STAT_FORMAT
+tar c/-T/-X/-h	upstream BusyBox config	stock minidump and replacement sysupgrade create backups	enable CREATE, FROM, and GNU long-name support
+wget HTTPS	upstream BusyBox config plus stock OpenSSL	stock binary contains OpenSSL and internal-TLS paths; overlay healthcheck uses HTTPS	enable OpenSSL verification and stock-compatible internal fallback
+passwd SHA-512	upstream BusyBox config	factory help declares sha512 default	set the candidate default to sha512 and test the resulting shadow hash
+netstat -Wp	upstream BusyBox config	factory help exposes both options	enable WIDE and PRG
+xargs -0/-p/-x	upstream BusyBox config	factory help exposes all three options	enable zero-term, confirmation, termopt, and quote parsing
+start-stop-daemon -q	upstream BusyBox config	stock service wrapper conditionally emits -q	enable fancy mode so the accepted option remains documented
+ntpd client/server	upstream BusyBox config plus locked QSDK sysntpd	stock UCI system.ntp and native LuCI expect sysntpd; custom ntpdate facade does not implement the native service contract	enable NTPD and FEATURE_NTPD_SERVER, keep runtime enable_server default off, and ship the standard QSDK service payload
+arping -B	unpublished factory extension	no stock/QSDK/replacement-overlay textual caller found	do not port without a hardware/runtime requirement
+ping -Q	unpublished factory extension	no stock/QSDK/replacement-overlay textual caller found	do not port without a hardware/runtime requirement
+udhcpc -Q	unpublished factory extension	no stock/QSDK/replacement-overlay textual caller found	do not port without a protocol/runtime requirement

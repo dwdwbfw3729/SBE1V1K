@@ -1,0 +1,30 @@
+From d996988ae55b6af12e4611fdd758a2f0ad27a9a1 Mon Sep 17 00:00:00 2001
+From: Felix Fietkau <nbd@nbd.name>
+Date: Thu, 2 Jan 2025 12:06:53 +0100
+Subject: [PATCH] libubus: close file descriptor after sending it from a
+ request
+
+Avoids local file descriptor leaks
+
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
+---
+ libubus-req.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libubus-req.c b/libubus-req.c
+index ae9d192..474aac2 100644
+--- a/libubus-req.c
++++ b/libubus-req.c
+@@ -192,6 +192,8 @@ void ubus_complete_deferred_request(struct ubus_context *ctx, struct ubus_reques
+ 	blob_put_int32(&b, UBUS_ATTR_STATUS, ret);
+ 	blob_put_int32(&b, UBUS_ATTR_OBJID, req->object);
+ 	ubus_send_msg(ctx, req->seq, b.head, UBUS_MSG_STATUS, req->peer, req->fd);
++	if (req->fd >= 0)
++		close(req->fd);
+ }
+ 
+ static void ubus_put_data(struct blob_buf *buf, struct blob_attr *msg)
+-- 
+2.54.0 (Apple Git-157)
+
+

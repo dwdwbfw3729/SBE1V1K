@@ -1,0 +1,63 @@
+From 0c095592ccb79053dd02a57bf006dde2bd26ad28 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 13 Apr 2026 00:09:52 +0200
+Subject: [PATCH] ubusd_proto: fix resource leaks and ID tree corruption in
+ ubusd_proto_new_client
+
+Three bugs in the error cleanup paths:
+
+1. When ubus_alloc_id() failed, 'goto free' skipped ubusd_acl_free_client(),
+   leaking the user/group strings and extra_gid array.
+
+2. When ubusd_proto_init_retmsg() failed, 'goto free' skipped both
+   ubus_free_id() and ubusd_acl_free_client(). The freed 'cl' struct
+   remained in the client ID tree, causing use-after-free on any
+   subsequent ID lookup.
+
+3. When ubusd_send_hello() failed, 'goto delete' called ubus_free_id()
+   but did not free cl->retmsg or cl->b, leaking those allocations.
+
+Fix by restructuring the error labels so each path frees exactly the
+resources that were successfully allocated.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Link: https://github.com/openwrt/ubus/pull/20
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ ubusd_proto.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/ubusd_proto.c b/ubusd_proto.c
+index 31263dc..a25a2ce 100644
+--- a/ubusd_proto.c
++++ b/ubusd_proto.c
+@@ -583,18 +583,23 @@ struct ubus_client *ubusd_proto_new_client(int fd, uloop_fd_handler cb)
+ 	cl->pending_msg_fd = -1;
+ 
+ 	if (!ubus_alloc_id(&clients, &cl->id, 0))
+-		goto free;
++		goto acl_free;
+ 
+ 	if (ubusd_proto_init_retmsg(cl))
+-		goto free;
++		goto delete_no_retmsg;
+ 
+ 	if (!ubusd_send_hello(cl))
+ 		goto delete;
+ 
+ 	return cl;
+ 
+ delete:
++	ubus_msg_free(cl->retmsg);
++delete_no_retmsg:
++	blob_buf_free(&cl->b);
+ 	ubus_free_id(&clients, &cl->id);
++acl_free:
++	ubusd_acl_free_client(cl);
+ free:
+ 	free(cl);
+ 	return NULL;
+-- 
+2.54.0 (Apple Git-157)
+
+
