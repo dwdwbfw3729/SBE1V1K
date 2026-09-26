@@ -25,7 +25,7 @@ jobs:
       - name: Run Base Build
         run: |
           chmod +x ./stock-qsdk-lab/build.sh
-          ./stock-qsdk-lab/build.sh base --jobs 2 --output "$(pwd)/output_release"
+          ./stock-qsdk-lab/build.sh base --jobs 1 --output "$(pwd)/output_release"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
