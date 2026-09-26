@@ -20,7 +20,7 @@ jobs:
         run: |
           brew update
           brew install docker colima qemu
-          colima start
+          colima start --vm-type qemu --cpu 2 --memory 8
           
       - name: Run Base Build
         run: |
