@@ -17,10 +17,11 @@ jobs:
           python-version: '3.x'
 
       - name: Setup Docker via Colima
-        uses: abiosoft/colima-action@v1
-        with:
-          colima-version: 'latest'
-
+        run: |
+          brew update
+          brew install docker colima
+          colima start
+          
       - name: Run Base Build
         run: |
           chmod +x ./stock-qsdk-lab/build.sh
