@@ -19,7 +19,7 @@ jobs:
       - name: Setup Docker via Colima
         run: |
           brew update
-          brew install docker colima
+          brew install docker colima qemu
           colima start
           
       - name: Run Base Build
