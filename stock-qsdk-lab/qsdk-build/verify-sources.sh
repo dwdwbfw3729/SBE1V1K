@@ -8,7 +8,7 @@ workspace_root=$(CDPATH= cd -- "$repo_root/.." && pwd)
 
 source_root=${QSDK_SOURCE_ROOT:-"$repo_root/stock-qsdk-lab/deps/qsdk-spf12.2-locked"}
 qsdk_dir=$source_root/qsdk
-source_prep_gate=${QSDK_VERIFY_SOURCE_PREP:-0}
+source_prep_gate=0
 
 fail() {
 	printf 'ERROR: %s\n' "$*" >&2
