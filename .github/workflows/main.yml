@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Setup Docker via Colima
+        uses: abiosoft/colima-action@v1
+        with:
+          colima-version: 'latest'
+
+      - name: Run Base Build
+        run: |
+          chmod +x ./stock-qsdk-lab/build.sh
+          ./stock-qsdk-lab/build.sh base --jobs 2 --output "$(pwd)/output_release"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-artifacts
+          path: |
+            output_release/
+            stock-qsdk-lab/work/build-logs/
+          if-no-files-found: warn
